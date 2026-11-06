@@ -1,4 +1,5 @@
 import type { MapViewMode } from "./HospitalMap3D";
+import { useLanguage } from "../../hooks/useLanguage";
 
 type Props = {
   viewMode: MapViewMode;
@@ -19,23 +20,24 @@ export default function MapControls({
   onToggleExploded,
   onResetCamera,
 }: Props) {
+  const { language, t } = useLanguage();
   return (
     <>
       <div className="map3d-toolbar">
-        <div className="map3d-view-toggle" aria-label="Map view">
+        <div className="map3d-view-toggle" aria-label={t("Map view", language)}>
           <button
             className={viewMode === "building" ? "active" : ""}
             onClick={() => onViewModeChange("building")}
             type="button"
           >
-            Campus
+            {t("Campus", language)}
           </button>
           <button
             className={viewMode === "floor" ? "active" : ""}
             onClick={() => onViewModeChange("floor")}
             type="button"
           >
-            Floor plan
+            {t("Floor plan", language)}
           </button>
         </div>
         <div className="map3d-actions">
@@ -46,10 +48,10 @@ export default function MapControls({
                 onClick={onToggle2D}
                 type="button"
                 aria-pressed={is2D}
-                aria-label={is2D ? "Switch to 3D view" : "Switch to 2D view"}
-                title={is2D ? "Switch to 3D view" : "Switch to 2D view"}
+                aria-label={t(is2D ? "Switch to 3D view" : "Switch to 2D view", language)}
+                title={t(is2D ? "Switch to 3D view" : "Switch to 2D view", language)}
               >
-                {is2D ? "2D view" : "3D view"}
+                {t(is2D ? "2D view" : "3D view", language)}
               </button>
               <button
                 className={`map3d-action${exploded ? " active" : ""}`}
@@ -57,7 +59,7 @@ export default function MapControls({
                 type="button"
                 aria-pressed={exploded}
               >
-                {exploded ? "Stack floors" : "Explode floors"}
+                {t(exploded ? "Stack floors" : "Explode floors", language)}
               </button>
             </>
           )}
@@ -65,9 +67,9 @@ export default function MapControls({
             className="map3d-action"
             onClick={onResetCamera}
             type="button"
-            title="Reset camera"
+            title={t("Reset camera", language)}
           >
-            Reset view
+            {t("Reset view", language)}
           </button>
         </div>
       </div>

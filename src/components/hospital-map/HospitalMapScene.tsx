@@ -7,6 +7,8 @@ import type {
   HospitalBuilding,
   HospitalDepartment,
 } from "../../data/hospitalMapData";
+import type { IndoorPositionEstimate } from "../../services/indoorPositioningService";
+import type { IndoorRoute } from "../../services/hospitalRouteService";
 import HospitalCampusModel from "./HospitalCampusModel";
 import HospitalFloorModel from "./HospitalFloorModel";
 
@@ -15,9 +17,15 @@ type Props = {
   departments: HospitalDepartment[];
   selectedBuilding: string;
   selectedFloor: string;
-  startBuilding: string;
-  startFloor: string;
   destination: HospitalDepartment | null;
+  route: IndoorRoute | null;
+  currentPosition: IndoorPositionEstimate | null;
+  visualStartPoint: {
+    buildingId: string;
+    floor: string;
+    position: [number, number];
+  } | null;
+  placingVisualStart: boolean;
   viewMode: "building" | "floor";
   exploded: boolean;
   is2D: boolean;
@@ -25,6 +33,7 @@ type Props = {
   onBuildingChange: (id: string) => void;
   onFloorChange: (floor: string) => void;
   onSelectDestination: (department: HospitalDepartment) => void;
+  onPlaceVisualStart: (position: [number, number]) => void;
   onSelectRoom: (space: FloorSpace) => void;
   onHoverRoom: (space: FloorSpace | null) => void;
   onViewModeChange: (mode: "building" | "floor") => void;
@@ -35,9 +44,11 @@ export default function HospitalMapScene({
   departments,
   selectedBuilding,
   selectedFloor,
-  startBuilding,
-  startFloor,
   destination,
+  route,
+  currentPosition,
+  visualStartPoint,
+  placingVisualStart,
   viewMode,
   exploded,
   is2D,
@@ -45,6 +56,7 @@ export default function HospitalMapScene({
   onBuildingChange,
   onFloorChange,
   onSelectDestination,
+  onPlaceVisualStart,
   onSelectRoom,
   onHoverRoom,
   onViewModeChange,
@@ -142,12 +154,30 @@ export default function HospitalMapScene({
               floor={floor}
               departments={departments}
               destination={destination}
-              startBuilding={startBuilding}
-              startFloor={startFloor}
+              route={route}
+              currentPosition={currentPosition}
+              visualStartPosition={
+                visualStartPoint?.buildingId === building.id &&
+                visualStartPoint.floor === floor
+                  ? visualStartPoint.position
+                  : null
+              }
+              placingVisualStart={placingVisualStart && floor === selectedFloor}
               y={y}
-              selected={floor === selectedFloor}
+              selected={
+                floor === selectedFloor ||
+                (exploded &&
+                  Boolean(
+                    route?.floorSegments.some(
+                      (segment) =>
+                        segment.buildingId === building.id &&
+                        segment.floor === floor,
+                    ),
+                  ))
+              }
               onSelectFloor={() => onFloorChange(floor)}
               onSelectDestination={onSelectDestination}
+              onPlaceVisualStart={onPlaceVisualStart}
               onSelectRoom={onSelectRoom}
               onHoverRoom={onHoverRoom}
             />

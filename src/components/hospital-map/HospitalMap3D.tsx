@@ -5,9 +5,12 @@ import type {
   HospitalBuilding,
   HospitalDepartment,
 } from "../../data/hospitalMapData";
+import type { IndoorPositionEstimate } from "../../services/indoorPositioningService";
+import type { IndoorRoute } from "../../services/hospitalRouteService";
 import { getFloorSpaces } from "../../data/hospitalMapData";
 import HospitalMapScene from "./HospitalMapScene";
 import MapControls from "./MapControls";
+import { useLanguage } from "../../hooks/useLanguage";
 
 export type MapViewMode = "building" | "floor";
 
@@ -16,17 +19,25 @@ type Props = {
   departments: HospitalDepartment[];
   selectedBuilding: string;
   selectedFloor: string;
-  startBuilding: string;
-  startFloor: string;
   destination: HospitalDepartment | null;
+  route: IndoorRoute | null;
   viewMode: MapViewMode;
   onBuildingChange: (buildingId: string) => void;
   onFloorChange: (floor: string) => void;
   onSelectDestination: (department: HospitalDepartment) => void;
   onViewModeChange: (viewMode: MapViewMode) => void;
+  currentPosition: IndoorPositionEstimate | null;
+  visualStartPoint: {
+    buildingId: string;
+    floor: string;
+    position: [number, number];
+  } | null;
+  placingVisualStart: boolean;
+  onPlaceVisualStart: (position: [number, number]) => void;
 };
 
 export default function HospitalMap3D(props: Props) {
+  const { language, t } = useLanguage();
   const [exploded, setExploded] = useState(false);
   const [is2D, setIs2D] = useState(false);
   const [selectedRoom, setSelectedRoom] = useState<FloorSpace | null>(null);
@@ -104,9 +115,11 @@ export default function HospitalMap3D(props: Props) {
             departments={props.departments}
             selectedBuilding={props.selectedBuilding}
             selectedFloor={props.selectedFloor}
-            startBuilding={props.startBuilding}
-            startFloor={props.startFloor}
             destination={props.destination}
+            route={props.route}
+            currentPosition={props.currentPosition}
+            visualStartPoint={props.visualStartPoint}
+            placingVisualStart={props.placingVisualStart}
             viewMode={props.viewMode}
             exploded={exploded}
             is2D={is2D}
@@ -117,6 +130,7 @@ export default function HospitalMap3D(props: Props) {
               props.onFloorChange(floor);
             }}
             onSelectDestination={props.onSelectDestination}
+            onPlaceVisualStart={props.onPlaceVisualStart}
             onSelectRoom={setSelectedRoom}
             onHoverRoom={setHoveredRoom}
             onViewModeChange={props.onViewModeChange}
@@ -126,16 +140,17 @@ export default function HospitalMap3D(props: Props) {
           N<b>↑</b>
         </div>
         <div className="map3d-help">
-          <span>↖</span> Drag to rotate <i /> Scroll to zoom <i /> Right-drag to pan
+          <span>↖</span> {t("Drag to rotate", language)} <i />{" "}
+          {t("Scroll to zoom", language)} <i /> {t("Right-drag to pan", language)}
         </div>
         {visibleRoom && props.viewMode === "floor" && (
           <div className="map3d-room-card" role="status">
-            <strong>{visibleRoom.label}</strong>
-            <span>Room {visibleRoom.roomNumber}</span>
+            <strong>{t(visibleRoom.label, language)}</strong>
+            <span>{t("Room", language)} {visibleRoom.roomNumber}</span>
             {visibleRoom.department && (
               <span>
-                Building {visibleRoom.department.building} ·{" "}
-                {visibleRoom.department.floor}
+                {t("Building", language)} {visibleRoom.department.building} ·{" "}
+                {t(visibleRoom.department.floor, language)}
               </span>
             )}
           </div>
@@ -147,21 +162,31 @@ export default function HospitalMap3D(props: Props) {
           <div>
             <strong>
               {props.viewMode === "building"
-                ? "Hospital campus"
-                : `${selectedBuilding?.name ?? "Hospital"} · ${props.selectedFloor}`}
+                ? props.currentPosition
+                  ? `${t("Current Location", language)} · ${t(props.buildings.find((item) => item.id === props.currentPosition?.buildingId)?.name ?? "Hospital", language)} · ${t(props.currentPosition.floor, language)}`
+                  : t("Hospital campus", language)
+                : `${t(selectedBuilding?.name ?? "Hospital", language)} · ${t(props.selectedFloor, language)}`}
             </strong>
             <small>
-              {props.viewMode === "building"
-                ? "Select a building to open its cutaway floor plan."
-                : "Illustrative sample layout — not an official hospital floor plan."}
+              {props.currentPosition &&
+              props.currentPosition.buildingId === props.selectedBuilding &&
+              props.currentPosition.floor === props.selectedFloor
+                ? props.currentPosition.source === "manual"
+                  ? t("Manual floor selection · no room-level position is available.", language)
+                  : props.currentPosition.source === "gps"
+                    ? t("GPS matched to a surveyed entrance; GPS does not identify indoor floors.", language)
+                  : `${Math.round(props.currentPosition.confidence * 100)}% ${t("floor confidence · room-level position requires calibrated beacon coordinates.", language)}`
+                : props.viewMode === "building"
+                  ? t("Select a building to open its cutaway floor plan.", language)
+                  : t("Illustrative sample layout — not an official hospital floor plan.", language)}
             </small>
           </div>
         </div>
-        <div className="map3d-legend" aria-label="Map legend">
-          <span><i className="legend-room" /> Rooms</span>
-          <span><i className="legend-start" /> Start</span>
-          <span><i className="legend-route" /> Route</span>
-          <span><i className="legend-destination" /> Destination</span>
+        <div className="map3d-legend" aria-label={t("Map legend", language)}>
+          <span><i className="legend-room" /> {t("Rooms", language)}</span>
+          <span><i className="legend-start" /> {t("Start", language)}</span>
+          <span><i className="legend-route" /> {t("Route", language)}</span>
+          <span><i className="legend-destination" /> {t("Destination", language)}</span>
         </div>
       </div>
     </div>
