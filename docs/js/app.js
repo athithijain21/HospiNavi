@@ -223,6 +223,12 @@
   function buildRail() {
     const rail = $('rail'); rail.innerHTML = '';
     const onRoute = new Set(state.res ? state.res.path.map((n) => n.floor) : []);
+    const home = document.createElement('button');
+    home.title = 'Re-centre the map'; home.setAttribute('aria-label', 'Re-centre the map');
+    home.innerHTML = '<svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><circle cx="8" cy="8" r="4.5" stroke="currentColor" stroke-width="1.6" fill="none"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/><path d="M8 0.5v3M8 12.5v3M0.5 8h3M12.5 8h3" stroke="currentColor" stroke-width="1.6"/></svg>';
+    home.onclick = () => frame(true);
+    rail.appendChild(home);
+    const sep0 = document.createElement('div'); sep0.className = 'sep'; rail.appendChild(sep0);
     const all = document.createElement('button');
     all.textContent = 'All'; all.title = 'Show all floors'; all.className = state.all ? 'on' : '';
     all.onclick = () => { state.all = !state.all; refreshView(true); };
@@ -371,7 +377,7 @@
     try {
       if (/^https?:$/.test(location.protocol) && !/claude\.ai|claudeusercontent/.test(location.host)) return location.origin + location.pathname;
     } catch (e) { /* ignore */ }
-    return 'https://athithijain21.github.io/HospitalNavi/';
+    return 'https://athithijain21.github.io/HospiNavi/';
   })();
   $('qrBase').value = defaultBase;
   function renderQR() {
@@ -446,6 +452,15 @@
       const e = 1 - Math.pow(1 - camGoal.t, 3);
       controls.target.lerpVectors(camGoal.fromT, camGoal.target, e);
       camera.position.lerpVectors(camGoal.fromP, camGoal.pos, e);
+    }
+    // keep the building in view: the camera can't be panned away from the block
+    if (camGoal.t >= 1) {
+      const t = controls.target, before = t.clone();
+      const top = (B.floors.length - 1) * gap();
+      t.x = Math.max(-32, Math.min(32, t.x));
+      t.z = Math.max(-24, Math.min(24, t.z));
+      t.y = Math.max(-2, Math.min(top + 2, t.y));
+      camera.position.add(t.clone().sub(before));
     }
     controls.update();
     const curve = routeGroup.userData.curve;
