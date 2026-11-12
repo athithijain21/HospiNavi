@@ -446,6 +446,7 @@
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
   let last = performance.now();
   function tick(now) {
+    requestAnimationFrame(tick); // schedule first, so one bad frame can never stop the map
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
     if (camGoal.t < 1) {
       camGoal.t = reduce ? 1 : Math.min(1, camGoal.t + dt * 1.8);
@@ -467,13 +468,18 @@
     if (curve && routeArrows.length) {
       routeArrows.forEach((a) => {
         if (!reduce) a.userData.u = (a.userData.u + dt * 6 / Math.max(1, curve.getLength())) % 1;
-        const u = a.userData.u, p = curve.getPointAt(u), t = curve.getTangentAt(u);
-        a.position.copy(p); a.lookAt(p.clone().add(t));
+        // rounding can push u just past the end of the path, where three.js returns null
+        const u = Math.min(0.999, Math.max(0, a.userData.u));
+        const p = curve.getPointAt(u);
+        if (!p) return;
+        let t = null;
+        try { t = curve.getTangentAt(u); } catch (e) { t = null; }
+        a.position.copy(p);
+        if (t) a.lookAt(p.clone().add(t));
       });
     }
     renderer.render(scene, camera);
     placeLabels();
-    requestAnimationFrame(tick);
   }
 
   // ---------- start ----------
