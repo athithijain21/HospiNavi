@@ -16,6 +16,7 @@ export type RouteNode = {
   positioningId?: string;
   positioningSource?: "ble" | "wifi";
   mapPosition?: [number, number, number];
+  connectedNodeIds: string[];
   geoPosition?: { latitude: number; longitude: number };
 };
 
@@ -31,6 +32,7 @@ export type RouteEdge = {
   distanceMetres: number;
   kind: RouteEdgeKind;
   accessible: boolean;
+  walkable: boolean;
   bidirectional: boolean;
   label?: string;
   path?: [number, number, number][];

@@ -19,8 +19,8 @@ type Props = {
   onRetryGPS: () => void;
 };
 
-function formatUpdatedAt(timestamp: number, language: "en" | "kn") {
-  return new Intl.DateTimeFormat(language === "kn" ? "kn-IN" : "en-IN", {
+function formatUpdatedAt(timestamp: number, language: "en" | "kn" | "hi" | "ml") {
+  return new Intl.DateTimeFormat(`${language}-IN`, {
     hour: "numeric",
     minute: "2-digit",
     second: "2-digit",

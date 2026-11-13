@@ -115,6 +115,113 @@
   gap: 18px;
 }
 
+.ai-assistant-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  cursor: pointer;
+  color: #35566a;
+}
+
+.ai-assistant-toggle-copy {
+  display: grid;
+  gap: 1px;
+  text-align: right;
+}
+
+.ai-assistant-toggle-copy strong {
+  font-size: 12px;
+}
+
+.ai-assistant-toggle-copy small {
+  color: #718096;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.ai-assistant-switch {
+  display: inline-flex;
+  width: 40px;
+  height: 22px;
+  align-items: center;
+  padding: 3px;
+  border-radius: 999px;
+  background: #aab5bf;
+  border: 0;
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+
+.ai-assistant-switch span {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgb(23 43 55 / 25%);
+  transition: transform 160ms ease;
+}
+
+.ai-assistant-toggle:has([aria-checked="true"]) .ai-assistant-switch {
+  background: #2f9d68;
+}
+
+.ai-assistant-toggle:has([aria-checked="true"]) .ai-assistant-switch span {
+  transform: translateX(18px);
+}
+
+.ai-assistant-toggle:focus-within .ai-assistant-switch {
+  outline: 2px solid #8cccad;
+  outline-offset: 2px;
+}
+
+.ai-assistant-toggle.is-compact .ai-assistant-toggle-copy strong {
+  display: none;
+}
+
+.patient-assistant-control {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin: 14px 0;
+  padding: 12px 14px;
+  border: 1px solid #e3eaf0;
+  border-radius: 9px;
+  background: #fbfcfd;
+}
+
+.patient-assistant-feedback {
+  display: grid;
+  gap: 2px;
+  color: #35566a;
+  font-size: 12px;
+}
+
+.patient-assistant-feedback span,
+.patient-assistant-feedback small {
+  color: #718096;
+  line-height: 1.4;
+}
+
+.patient-manual-destinations {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+  margin: 12px 0;
+}
+
+.patient-manual-destinations select {
+  flex: 1 1 250px;
+}
+
+.patient-manual-sequence {
+  margin-top: 16px;
+}
+
+.patient-manual-sequence h3 {
+  margin: 0 0 8px;
+  font-size: 15px;
+}
+
 .language-selector {
   display: flex;
   align-items: center;
@@ -137,6 +244,32 @@
   color: #0a9d71;
   font-size: 12px;
   white-space: nowrap;
+}
+
+.offline-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border: 1px solid #f0c36d;
+  border-radius: 9px;
+  background: #fff8e6;
+  color: #5f4b16;
+  line-height: 1.45;
+}
+
+.offline-banner strong {
+  white-space: nowrap;
+}
+
+.outdoor-route-error,
+.outdoor-map-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
 }
 
 html[lang="kn"] body {
@@ -264,6 +397,128 @@ html[lang="kn"] body {
   background: var(--primary-light);
 }
 
+.patient-shortcuts {
+  border-left: 4px solid #43a047;
+}
+
+.patient-shortcuts .muted {
+  margin-bottom: 14px;
+}
+
+.assistant-fallback-note {
+  margin: 10px 0 14px;
+  padding: 10px 12px;
+  border-left: 3px solid #f4b942;
+  border-radius: 6px;
+  background: #fff9e8;
+  color: #5f4b16;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.how-it-works {
+  display: grid;
+  gap: 16px;
+}
+
+.welcome-guide {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-left: 4px solid var(--primary);
+}
+
+.welcome-guide .muted {
+  margin-bottom: 0;
+}
+
+.welcome-guide-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  flex: 0 0 auto;
+}
+
+.header-action,
+.text-button {
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid #dce5ee;
+  border-radius: 8px;
+  background: #fff;
+  color: var(--primary);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.header-action:hover,
+.text-button:hover {
+  background: #f0f7fa;
+}
+
+button:focus-visible,
+a:focus-visible,
+select:focus-visible,
+summary:focus-visible {
+  outline: 3px solid #f4b942;
+  outline-offset: 2px;
+}
+
+.how-it-works .section-title {
+  margin-bottom: 8px;
+}
+
+.how-it-works .muted {
+  margin-bottom: 0;
+}
+
+.how-it-works-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.how-it-works-step {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 76px;
+  padding: 13px;
+  border: 1px solid #e0edf3;
+  border-radius: 10px;
+  background: #f7fbfc;
+}
+
+.how-it-works-step > span {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--primary);
+  color: #fff;
+  font-weight: 800;
+}
+
+.how-it-works-step div {
+  display: grid;
+  gap: 4px;
+}
+
+.how-it-works-step strong {
+  color: var(--primary-dark);
+  font-size: 13px;
+}
+
+.how-it-works-step small,
+.field-help {
+  color: var(--text-secondary);
+  font-size: 12px;
+  line-height: 1.45;
+}
+
 .row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -276,6 +531,11 @@ html[lang="kn"] body {
   color: #8294a8;
   font-size: 11px;
   font-weight: 700;
+}
+
+.field-help {
+  display: block;
+  margin-top: 7px;
 }
 
 select,
@@ -388,6 +648,39 @@ input:focus {
 .gps-box .gps-note {
   max-width: 610px;
   line-height: 1.5;
+}
+
+.gps-readable-location {
+  margin-top: 9px;
+}
+
+.gps-readable-location .gps-location-name {
+  margin-top: 4px;
+  color: #35566a;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.gps-readable-location small {
+  display: block;
+  margin-top: 4px;
+  color: #8b9aab;
+  font-size: 11px;
+}
+
+.gps-readable-location details {
+  margin-top: 8px;
+  color: #5d7885;
+  font-size: 12px;
+}
+
+.gps-readable-location details p {
+  margin: 4px 0;
+  font-size: 12px;
+}
+
+.gps-accuracy-warning {
+  color: #9a6a1a !important;
 }
 
 .indoor-positioning-heading {
@@ -509,6 +802,12 @@ input:focus {
   flex-wrap: wrap;
   gap: 9px;
   margin: 12px 0;
+}
+
+.indoor-positioning-actions button {
+  max-width: 100%;
+  min-width: 0;
+  white-space: normal;
 }
 
 .indoor-demo-controls {
@@ -858,6 +1157,18 @@ input:focus {
   line-height: 1.45;
 }
 
+.patient-candidate-destinations {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+}
+
+.patient-candidate-destinations button {
+  padding: 6px 9px;
+  font-size: 12px;
+}
+
 .structured-requirements details {
   margin-top: 10px;
   color: #526579;
@@ -991,6 +1302,41 @@ input:focus {
   color: var(--text-secondary);
   font-size: 11px;
   line-height: 1.5;
+}
+
+.indoor-guidance-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 14px 0;
+}
+
+.indoor-guidance-metrics > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 13px 15px;
+  border: 1px solid #dcebe5;
+  border-radius: 10px;
+  background: #f2faf6;
+}
+
+.indoor-guidance-metrics span {
+  color: #527c69;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.indoor-guidance-metrics strong {
+  color: #087a55;
+  font-size: 21px;
+  line-height: 1.2;
+}
+
+.indoor-guidance-metrics small {
+  color: var(--text-secondary);
+  font-size: 11px;
+  line-height: 1.45;
 }
 
 .indoor-guidance-step {
@@ -1140,6 +1486,101 @@ input:focus {
   color: var(--text-secondary);
 }
 
+.outdoor-debug {
+  margin: 0 0 16px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: #fbfdfe;
+  color: var(--text-secondary);
+  font-size: 12px;
+}
+
+.outdoor-debug summary {
+  color: var(--primary-dark);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.outdoor-debug dl {
+  display: grid;
+  grid-template-columns: minmax(150px, auto) 1fr;
+  gap: 5px 14px;
+  margin: 10px 0 0;
+}
+
+.outdoor-debug dt {
+  font-weight: 700;
+}
+
+.outdoor-debug dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.outdoor-destination-card {
+  display: grid;
+  gap: 3px;
+  margin: 14px 0;
+  padding: 12px 14px;
+  border: 1px solid #cfe7ef;
+  border-radius: 10px;
+  background: #f4fbfd;
+  color: var(--text-secondary);
+}
+
+.outdoor-destination-card strong {
+  color: var(--primary-dark);
+}
+
+.outdoor-tracking-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.outdoor-map-actions {
+  position: absolute;
+  z-index: 500;
+  top: 12px;
+  right: 12px;
+  display: grid;
+  gap: 5px;
+}
+
+.outdoor-map-actions button {
+  min-width: 34px;
+  min-height: 34px;
+  padding: 5px 8px;
+  border: 1px solid #c7d9df;
+  border-radius: 6px;
+  background: #fff;
+  color: var(--primary-dark);
+  box-shadow: 0 2px 6px #18354822;
+  cursor: pointer;
+  font: inherit;
+}
+
+.outdoor-map-actions button:hover {
+  background: #f0f9fb;
+}
+
+.outdoor-map-error {
+  position: absolute;
+  z-index: 600;
+  right: 12px;
+  bottom: 12px;
+  max-width: 280px;
+  padding: 9px 11px;
+  border: 1px solid #e8b4b4;
+  border-radius: 8px;
+  background: #fff7f7;
+  color: #9b2c2c;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .outdoor-arrival {
   display: flex;
   align-items: center;
@@ -1159,6 +1600,7 @@ input:focus {
 }
 
 .outdoor-map-shell {
+  position: relative;
   min-height: 280px;
   overflow: hidden;
   border: 1px solid var(--border);
@@ -1786,6 +2228,19 @@ button:focus-visible {
 }
 
 @media (max-width: 700px) {
+  .welcome-guide {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .welcome-guide-actions {
+    width: 100%;
+  }
+
+  .welcome-guide-actions button {
+    flex: 1 1 140px;
+  }
+
   .app {
     display: block;
   }
@@ -1829,6 +2284,12 @@ button:focus-visible {
   .topbar {
     min-height: 75px;
     padding: 15px 20px;
+  }
+
+  .topbar-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 10px;
   }
 
   .content {
@@ -1887,6 +2348,20 @@ button:focus-visible {
 
   .patient-input-language {
     grid-template-columns: 1fr;
+  }
+
+  .how-it-works-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .outdoor-tracking-actions {
+    width: 100%;
+  }
+
+  .outdoor-tracking-actions button,
+  .outdoor-tracking-actions a {
+    flex: 1 1 150px;
+    text-align: center;
   }
 }
 

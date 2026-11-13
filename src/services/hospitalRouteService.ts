@@ -53,6 +53,14 @@ export function getIndoorRouteMapError(
   if (route.nodes.length === 0 || route.edges.length !== route.nodes.length - 1) {
     return "The route cannot be displayed because its ordered nodes and connections do not form a complete path.";
   }
+  if (
+    !route.nodes[0] ||
+    !route.nodes.at(-1) ||
+    route.distanceMetres !==
+      route.edges.reduce((distance, edge) => distance + edge.distanceMetres, 0)
+  ) {
+    return "The route cannot be displayed because its endpoints or configured distance do not match its ordered connections.";
+  }
 
   for (const [index, node] of route.nodes.entries()) {
     if (
@@ -73,6 +81,9 @@ export function getIndoorRouteMapError(
 
     const previous = route.nodes[index - 1];
     const edge = route.edges[index - 1];
+    if (!edge.walkable) {
+      return `The route cannot be displayed because the connection from ${previous.label} to ${node.label} is marked as restricted.`;
+    }
     const connected =
       (edge.from === previous.id && edge.to === node.id) ||
       (edge.bidirectional && edge.from === node.id && edge.to === previous.id);

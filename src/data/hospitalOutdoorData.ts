@@ -16,6 +16,12 @@ export const hospitalCampusReference: OutdoorCoordinate = {
   longitude: 74.8623117,
 };
 
+export const hospitalDestination = {
+  name: "Father Muller Medical College Hospital",
+  address: "Kankanady, Mangaluru, Karnataka, India",
+  coordinate: hospitalCampusReference,
+};
+
 // Proximity circle around the supplied campus reference, not a surveyed property boundary.
 export const hospitalCampusGeofenceRadiusMetres = 250;
 export const maximumUsableGPSAccuracyMetres = 50;

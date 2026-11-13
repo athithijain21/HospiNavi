@@ -21,19 +21,27 @@ export function recognizeNavigationIntent(
 ): NavigationIntent {
   const normalized = input.trim().toLowerCase();
   const isKannada = /[\u0c80-\u0cff]/u.test(normalized);
+  const isHindi = /[\u0900-\u097f]/u.test(normalized);
+  const isMalayalam = /[\u0d00-\u0d7f]/u.test(normalized);
   if (
     /\b(where am i|my location|current location)\b/.test(normalized) ||
-    (isKannada && /(ನಾನು ಎಲ್ಲಿದ್ದೇನೆ|ನನ್ನ ಸ್ಥಳ|ಪ್ರಸ್ತುತ ಸ್ಥಳ)/u.test(normalized))
+    (isKannada && /(ನಾನು ಎಲ್ಲಿದ್ದೇನೆ|ನನ್ನ ಸ್ಥಳ|ಪ್ರಸ್ತುತ ಸ್ಥಳ)/u.test(normalized)) ||
+    (isHindi && /(मैं कहाँ हूँ|मेरी लोकेशन|वर्तमान स्थान)/u.test(normalized)) ||
+    (isMalayalam && /(ഞാൻ എവിടെയാണ്|എന്റെ സ്ഥലം|നിലവിലെ സ്ഥലം)/u.test(normalized))
   ) {
     return { type: "where-am-i" };
   }
   if (
     /\b(which|what) floor\b/.test(normalized) ||
-    (isKannada && /(ಯಾವ ಮಹಡಿ|ನಾನು ಯಾವ ಮಹಡಿ)/u.test(normalized))
+    (isKannada && /(ಯಾವ ಮಹಡಿ|ನಾನು ಯಾವ ಮಹಡಿ)/u.test(normalized)) ||
+    (isHindi && /(कौन सी मंजिल|मैं किस मंजिल)/u.test(normalized)) ||
+    (isMalayalam && /(ഏത് നില|ഞാൻ ഏത് നിലയിലാണ്)/u.test(normalized))
   ) return { type: "which-floor" };
   if (
     /\b(nearest|closest|find).*\b(lift|elevator)\b/.test(normalized) ||
-    (isKannada && /ಹತ್ತಿರದ.*(ಲಿಫ್ಟ್|ಎಲಿವೇಟರ್)/u.test(normalized))
+    (isKannada && /ಹತ್ತಿರದ.*(ಲಿಫ್ಟ್|ಎಲಿವೇಟರ್)/u.test(normalized)) ||
+    (isHindi && /निकटतम.*(लिफ्ट|एलिवेटर)/u.test(normalized)) ||
+    (isMalayalam && /അടുത്ത.*(ലിഫ്റ്റ്|എലിവേറ്റർ)/u.test(normalized))
   ) {
     return { type: "nearest-lift" };
   }

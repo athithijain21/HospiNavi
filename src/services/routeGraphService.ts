@@ -65,6 +65,24 @@ export function validateRouteGraph(graph: HospitalRouteGraph) {
         message: `Route node ${node.id} has invalid map geometry.`,
       });
     }
+    if (node.connectedNodeIds) {
+      const actualConnections = graph.edges
+        .filter(
+          (edge) =>
+            edge.walkable &&
+            (edge.from === node.id || (edge.bidirectional && edge.to === node.id)),
+        )
+        .map((edge) => (edge.from === node.id ? edge.to : edge.from))
+        .sort();
+      if (
+        [...node.connectedNodeIds].sort().join("|") !==
+        actualConnections.sort().join("|")
+      ) {
+        errors.push({
+          message: `Route node ${node.id} has an inconsistent list of connected nodes.`,
+        });
+      }
+    }
     if (
       node.geoPosition &&
       (!Number.isFinite(node.geoPosition.latitude) ||
@@ -97,6 +115,12 @@ export function validateRouteGraph(graph: HospitalRouteGraph) {
       errors.push({
         edgeIndex,
         message: `Route edge ${edge.from} → ${edge.to} must have a positive measured distance.`,
+      });
+    }
+    if (typeof edge.walkable !== "boolean") {
+      errors.push({
+        edgeIndex,
+        message: `Route edge ${edge.from} → ${edge.to} must explicitly declare whether it is walkable.`,
       });
     }
     if (edge.path?.some((point) => point.some((coordinate) => !Number.isFinite(coordinate)))) {
@@ -204,9 +228,11 @@ export function findGraphRoute(
   if (!nodeById.has(startNodeId) || !nodeById.has(destinationNodeId)) return null;
 
   const distances = new Map(graph.nodes.map((node) => [node.id, Infinity]));
+  const hopCounts = new Map(graph.nodes.map((node) => [node.id, Infinity]));
   const previous = new Map<string, { nodeId: string; edge: RouteEdge }>();
   const remaining = new Set(nodeById.keys());
   distances.set(startNodeId, 0);
+  hopCounts.set(startNodeId, 0);
 
   while (remaining.size > 0) {
     let currentId: string | null = null;
@@ -223,6 +249,7 @@ export function findGraphRoute(
     remaining.delete(currentId);
 
     graph.edges.forEach((edge) => {
+      if (!edge.walkable) return;
       if (accessibleOnly && !edge.accessible) return;
       const neighborId =
         edge.from === currentId
@@ -233,8 +260,14 @@ export function findGraphRoute(
       if (!neighborId || !remaining.has(neighborId)) return;
       const nextDistance =
         (distances.get(currentId) ?? Infinity) + edge.distanceMetres;
-      if (nextDistance < (distances.get(neighborId) ?? Infinity)) {
+      const nextHopCount = (hopCounts.get(currentId) ?? Infinity) + 1;
+      if (
+        nextDistance < (distances.get(neighborId) ?? Infinity) ||
+        (nextDistance === (distances.get(neighborId) ?? Infinity) &&
+          nextHopCount < (hopCounts.get(neighborId) ?? Infinity))
+      ) {
         distances.set(neighborId, nextDistance);
+        hopCounts.set(neighborId, nextHopCount);
         previous.set(neighborId, { nodeId: currentId, edge });
       }
     });

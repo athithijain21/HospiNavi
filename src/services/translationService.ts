@@ -1,11 +1,13 @@
 import en from "../locales/en.json";
 import kn from "../locales/kn.json";
+import hi from "../locales/hi.json";
+import ml from "../locales/ml.json";
 
-export type Language = "en" | "kn";
+export type Language = "en" | "kn" | "hi" | "ml";
 export type TranslationKey = keyof typeof en;
 type TranslationValues = Record<string, string | number>;
 
-const dictionaries: Record<Language, Record<string, string>> = { en, kn };
+const dictionaries: Record<Language, Record<string, string>> = { en, kn, hi, ml };
 
 export function translateText(
   key: string,
@@ -24,10 +26,31 @@ function translateDynamicText(text: string, language: Language) {
   const reasonSeparator = text.indexOf(": ");
   if (reasonSeparator > 0) {
     const departmentName = text.slice(0, reasonSeparator);
-    if (departmentName in kn) {
+    if (departmentName in dictionaries[language]) {
       return `${translateText(departmentName, language)}: ${translateText(text.slice(reasonSeparator + 2), language)}`;
     }
   }
+  if (language === "hi") {
+    const patterns: [RegExp, (match: RegExpMatchArray) => string][] = [
+      [/^Which configured destination did you mean(?:: (.+))?\?$/u, (m) => `आपका मतलब किस कॉन्फ़िगर किए गए गंतव्य से है${m[1] ? `: ${m[1].split(", ").map((name) => translateText(name, language)).join(", ")}` : ""}?`],
+      [/^I could not match “(.+)” to a configured department or facility\. Please clarify the service or ask hospital staff\.$/u, (m) => `“${m[1]}” को किसी कॉन्फ़िगर किए गए विभाग या सुविधा से नहीं मिलाया जा सका। कृपया सेवा स्पष्ट करें या अस्पताल के कर्मचारियों से पूछें।`],
+    ];
+    for (const [pattern, render] of patterns) {
+      const match = text.match(pattern);
+      if (match) return render(match);
+    }
+  }
+  if (language === "ml") {
+    const patterns: [RegExp, (match: RegExpMatchArray) => string][] = [
+      [/^Which configured destination did you mean(?:: (.+))?\?$/u, (m) => `ഏത് ക്രമീകരിച്ച ലക്ഷ്യസ്ഥാനമാണ് നിങ്ങൾ ഉദ്ദേശിച്ചത്${m[1] ? `: ${m[1].split(", ").map((name) => translateText(name, language)).join(", ")}` : ""}?`],
+      [/^I could not match “(.+)” to a configured department or facility\. Please clarify the service or ask hospital staff\.$/u, (m) => `“${m[1]}” ക്രമീകരിച്ച വിഭാഗമോ സൗകര്യമോ ആയി കണ്ടെത്താനായില്ല. സേവനം വ്യക്തമായി പറയുക അല്ലെങ്കിൽ ആശുപത്രി ജീവനക്കാരോട് ചോദിക്കുക.`],
+    ];
+    for (const [pattern, render] of patterns) {
+      const match = text.match(pattern);
+      if (match) return render(match);
+    }
+  }
+  if (language !== "kn") return text;
   const patterns: [RegExp, (match: RegExpMatchArray) => string][] = [
     [/^I could not match “(.+)” to a configured department or facility\. Please clarify the service or ask hospital staff\.$/u, (m) => `“${m[1]}” ವಿನಂತಿಗೆ ಹೊಂದುವ ಸಂರಚಿಸಿದ ವಿಭಾಗ ಅಥವಾ ಸೌಲಭ್ಯ ಸಿಗಲಿಲ್ಲ. ಸೇವೆಯನ್ನು ಸ್ಪಷ್ಟಪಡಿಸಿ ಅಥವಾ ಆಸ್ಪತ್ರೆಯ ಸಿಬ್ಬಂದಿಯನ್ನು ಕೇಳಿ.`],
     [/^I matched a general consultation to General Medicine\. Did you mean a specific configured specialty\?$/u, () => "ಸಾಮಾನ್ಯ ವೈದ್ಯಕೀಯ ವಿಭಾಗಕ್ಕೆ ಸಾಮಾನ್ಯ ಸಲಹೆಯನ್ನು ಹೊಂದಿಸಲಾಗಿದೆ. ನೀವು ನಿರ್ದಿಷ್ಟ ಸಂರಚಿಸಿದ ವಿಶೇಷ ವಿಭಾಗವನ್ನು ಉದ್ದೇಶಿಸಿದ್ದೀರಾ?"],
@@ -65,6 +88,33 @@ export function translateDepartmentName(name: string, language: Language) {
 
 export function translateNavigationText(text: string, language: Language) {
   if (language === "en") return text;
+  if (language === "hi" || language === "ml") {
+    const labels = language === "hi"
+      ? {
+          stopped: "नेविगेशन रोक दिया गया।",
+          noDirections: "कोई सक्रिय मार्गदर्शन उपलब्ध नहीं है।",
+          arrived: "आप गंतव्य पर पहुँच गए हैं",
+          starting: "दिशाएँ शुरू की जा रही हैं",
+          unavailable: "चयनित स्थान चुना गया है, लेकिन वर्तमान प्रारंभिक स्थान से कोई सत्यापित इनडोर मार्ग उपलब्ध नहीं है।",
+        }
+      : {
+          stopped: "നാവിഗേഷൻ നിർത്തി.",
+          noDirections: "സജീവമായ മാർഗനിർദ്ദേശങ്ങളൊന്നുമില്ല.",
+          arrived: "നിങ്ങൾ ലക്ഷ്യസ്ഥാനത്ത് എത്തി",
+          starting: "ദിശകൾ ആരംഭിക്കുന്നു",
+          unavailable: "തിരഞ്ഞെടുത്ത സ്ഥലം തിരഞ്ഞെടുത്തു, എന്നാൽ സ്ഥിരീകരിച്ച ആരംഭ സ്ഥലത്തുനിന്ന് ഇൻഡോർ റൂട്ട് ലഭ്യമല്ല.",
+        };
+    if (/^Navigation stopped\.$/u.test(text)) return labels.stopped;
+    if (/^There are no active route directions to repeat\.$/u.test(text)) return labels.noDirections;
+    const arrival = text.match(/^(You have arrived at|SAMPLE ROUTE: Simulated destination reached) (.+)\.$/u);
+    if (arrival) return `${labels.arrived}: ${arrival[2]}.`;
+    const starting = text.match(/^Starting directions to (.+), (.+), (.+), room (.+)\.$/u);
+    if (starting) return `${labels.starting} ${starting[1]}, ${starting[2]}, ${starting[3]}, room ${starting[4]}.`;
+    if (/no verified indoor route is available from the confirmed starting point\.$/u.test(text)) {
+      return labels.unavailable;
+    }
+    return text;
+  }
   const commandResponses: [RegExp, (match: RegExpMatchArray) => string][] = [
     [
       /^No surveyed elevator route to (.+) is available from the confirmed starting point\.$/u,

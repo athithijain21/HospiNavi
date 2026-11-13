@@ -1,6 +1,11 @@
 import { Text } from "@react-three/drei";
+import type { FloorSpace } from "../../data/hospitalMapData";
 
-export default function HospitalCorridor() {
+type Props = {
+  spaces: FloorSpace[];
+};
+
+export default function HospitalCorridor({ spaces }: Props) {
   return (
     <group>
       <mesh position={[0, 0, 0]} receiveShadow>
@@ -11,6 +16,35 @@ export default function HospitalCorridor() {
         <boxGeometry args={[10.1, 0.015, 1.54]} />
         <meshPhysicalMaterial color="#f4f6f5" roughness={0.62} clearcoat={0.1} />
       </mesh>
+      {spaces.map((space) => {
+        const side = space.z < 0 ? -1 : 1;
+        return (
+          <group key={`room-approach-${space.id}`}>
+            <mesh position={[space.x, 0.035, side * 0.92]}>
+              <boxGeometry args={[0.84, 0.015, 1.12]} />
+              <meshPhysicalMaterial color="#edf3f2" roughness={0.66} />
+            </mesh>
+            <mesh position={[space.x, 0.046, side * 0.76]}>
+              <boxGeometry args={[0.84, 0.008, 0.035]} />
+              <meshStandardMaterial color="#b4dfe0" roughness={0.48} />
+            </mesh>
+          </group>
+        );
+      })}
+      <mesh position={[0, 0.035, 1.5]}>
+        <boxGeometry args={[0.84, 0.015, 3]} />
+        <meshPhysicalMaterial color="#edf3f2" roughness={0.66} />
+      </mesh>
+      <Text
+        position={[0, 0.1, 2.45]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        fontSize={0.075}
+        color="#779297"
+        anchorX="center"
+        anchorY="middle"
+      >
+        SAMPLE BUILDING ENTRANCE
+      </Text>
       {Array.from({ length: 10 }, (_, index) => (
         <mesh key={`floor-joint-${index}`} position={[-4.5 + index, 0.045, 0]}>
           <boxGeometry args={[0.012, 0.006, 1.52]} />
@@ -88,7 +122,7 @@ export default function HospitalCorridor() {
         anchorY="middle"
         letterSpacing={0.12}
       >
-        MAIN CORRIDOR
+        MAIN CORRIDOR · SAMPLE CONNECTED ROOM APPROACHES
       </Text>
     </group>
   );

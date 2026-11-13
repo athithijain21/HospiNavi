@@ -127,7 +127,19 @@
   "Current Floor": "ಪ್ರಸ್ತುತ ಮಹಡಿ",
   "Current Location": "ಪ್ರಸ್ತುತ ಸ್ಥಳ",
   "Language": "ಭಾಷೆ",
-  "Select a language": "ಭಾಷೆ ಆಯ್ಕೆಮಾಡಿ",
+  "AI Assistant": "AI ಸಹಾಯಕ",
+  "AI Assistant ON": "ಆನ್",
+  "AI Assistant OFF": "ಆಫ್",
+  "AI Assistant Enabled": "AI ಸಹಾಯಕ ಸಕ್ರಿಯವಾಗಿದೆ",
+  "AI Assistant Disabled": "AI ಸಹಾಯಕ ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ",
+  "Smart patient requirement assistance is available.": "ಸ್ಮಾರ್ಟ್ ರೋಗಿ ಅಗತ್ಯ ಸಹಾಯ ಲಭ್ಯವಿದೆ.",
+  "You can manually select hospital departments and facilities.": "ನೀವು ಆಸ್ಪತ್ರೆಯ ವಿಭಾಗಗಳು ಮತ್ತು ಸೌಲಭ್ಯಗಳನ್ನು ಕೈಯಾರೆ ಆಯ್ಕೆ ಮಾಡಬಹುದು.",
+  "AI backend is configured.": "AI ಬ್ಯಾಕೆಂಡ್ ಸಂರಚಿಸಲಾಗಿದೆ.",
+  "AI backend unavailable; using rule-based matching.": "AI ಬ್ಯಾಕೆಂಡ್ ಲಭ್ಯವಿಲ್ಲ; ನಿಯಮ ಆಧಾರಿತ ಹೊಂದಾಣಿಕೆಯನ್ನು ಬಳಸಲಾಗುತ್ತಿದೆ.",
+  "AI Assistant is disabled. Please select a configured destination manually.": "AI ಸಹಾಯಕ ನಿಷ್ಕ್ರಿಯವಾಗಿದೆ. ದಯವಿಟ್ಟು ಸಂರಚಿಸಿದ ಗಮ್ಯಸ್ಥಾನವನ್ನು ಕೈಯಾರೆ ಆಯ್ಕೆಮಾಡಿ.",
+  "SELECT DESTINATIONS MANUALLY": "ಗಮ್ಯಸ್ಥಾನಗಳನ್ನು ಕೈಯಾರೆ ಆಯ್ಕೆಮಾಡಿ",
+  "AI processing is off. Use the configured destination selector below.": "AI ಪ್ರಕ್ರಿಯೆ ಆಫ್ ಆಗಿದೆ. ಕೆಳಗಿನ ಸಂರಚಿಸಿದ ಗಮ್ಯಸ್ಥಾನ ಆಯ್ಕೆಪಟ್ಟಿಯನ್ನು ಬಳಸಿ.",
+  "Selected destinations": "ಆಯ್ಕೆ ಮಾಡಿದ ಗಮ್ಯಸ್ಥಾನಗಳು",
   "Indoor Positioning": "ಒಳಾಂಗಣ ಸ್ಥಳ ಪತ್ತೆ",
   "Not positioning": "ಸ್ಥಳ ಪತ್ತೆ ಮಾಡುತ್ತಿಲ್ಲ",
   "Scanning for BLE beacons": "BLE ಬೀಕನ್‌ಗಳನ್ನು ಹುಡುಕಲಾಗುತ್ತಿದೆ",
@@ -224,6 +236,8 @@
   "AI service unavailable; used the local rule-based fallback": "AI ಸೇವೆ ಲಭ್ಯವಿಲ್ಲ; ಸ್ಥಳೀಯ ನಿಯಮ ಆಧಾರಿತ ಪರ್ಯಾಯವನ್ನು ಬಳಸಲಾಗಿದೆ",
   "match confidence": "ಹೊಂದಾಣಿಕೆಯ ವಿಶ್ವಾಸಾರ್ಹತೆ",
   "matched": "ಹೊಂದಿಕೆಯಾಗಿದೆ",
+  "Choose from these configured destinations": "ಈ ಸಂರಚಿಸಿದ ಗಮ್ಯಸ್ಥಾನಗಳಿಂದ ಆಯ್ಕೆಮಾಡಿ",
+  "Describe the configured hospital service you need. If you are unsure, choose from the listed departments.": "ನಿಮಗೆ ಬೇಕಾದ ಸಂರಚಿಸಿದ ಆಸ್ಪತ್ರೆ ಸೇವೆಯನ್ನು ವಿವರಿಸಿ. ಖಚಿತವಿಲ್ಲದಿದ್ದರೆ, ಪಟ್ಟಿ ಮಾಡಿದ ವಿಭಾಗಗಳಿಂದ ಆಯ್ಕೆಮಾಡಿ.",
   "Demo route available · simulated": "ಡೆಮೊ ಮಾರ್ಗ ಲಭ್ಯ · ಅನುಕರಿಸಲಾಗಿದೆ",
   "Route available · surveyed configuration": "ಮಾರ್ಗ ಲಭ್ಯ · ಸಮೀಕ್ಷಿತ ಸಂರಚನೆ",
   "Demo visit sequence · simulated route ordering": "ಡೆಮೊ ಭೇಟಿ ಕ್ರಮ · ಅನುಕರಿಸಿದ ಮಾರ್ಗದ ಕ್ರಮ",
@@ -240,6 +254,15 @@
   "Latitude:": "ಅಕ್ಷಾಂಶ:",
   "Longitude:": "ರೇಖಾಂಶ:",
   "GPS accuracy:": "GPS ನಿಖರತೆ:",
+  "Detected Location": "ಪತ್ತೆಯಾದ ಸ್ಥಳ",
+  "Looking up approximate location name…": "ಅಂದಾಜು ಸ್ಥಳದ ಹೆಸರನ್ನು ಹುಡುಕಲಾಗುತ್ತಿದೆ…",
+  "Approximate location name": "ಅಂದಾಜು ಸ್ಥಳದ ಹೆಸರು",
+  "Readable location unavailable.": "ಓದಬಹುದಾದ ಸ್ಥಳ ಲಭ್ಯವಿಲ್ಲ.",
+  "GPS accuracy is too poor for a precise location name.": "ನಿಖರ ಸ್ಥಳದ ಹೆಸರಿಗೆ GPS ನಿಖರತೆ ಸಾಕಾಗುವುದಿಲ್ಲ.",
+  "More Details": "ಹೆಚ್ಚಿನ ವಿವರಗಳು",
+  "Road:": "ರಸ್ತೆ:",
+  "District:": "ಜಿಲ್ಲೆ:",
+  "© OpenStreetMap contributors": "© OpenStreetMap ಕೊಡುಗೆದಾರರು",
   "Waiting for a GPS fix": "GPS ಸ್ಥಳಕ್ಕಾಗಿ ಕಾಯಲಾಗುತ್ತಿದೆ",
   "GPS provides outdoor coordinates only; it cannot identify your indoor building or floor.": "GPS ಹೊರಾಂಗಣ ನಿರ್ದೇಶಾಂಕಗಳನ್ನು ಮಾತ್ರ ಒದಗಿಸುತ್ತದೆ; ಒಳಾಂಗಣ ಕಟ್ಟಡ ಅಥವಾ ಮಹಡಿಯನ್ನು ಗುರುತಿಸಲು ಸಾಧ್ಯವಿಲ್ಲ.",
   "Retry GPS detection": "GPS ಪತ್ತೆಯನ್ನು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ",
@@ -288,6 +311,7 @@
   "Clear map marker": "ನಕ್ಷೆಯ ಗುರುತು ಅಳಿಸಿ",
   "No visual start point placed.": "ದೃಶ್ಯ ಪ್ರಾರಂಭದ ಗುರುತು ಇರಿಸಿಲ್ಲ.",
   "Visual marker:": "ದೃಶ್ಯ ಗುರುತು:",
+  "Click an open area on": "ತೆರೆದ ಪ್ರದೇಶದಲ್ಲಿ ಕ್ಲಿಕ್ ಮಾಡಿ",
   "Preparing interactive 3D map…": "ಸಂವಾದಾತ್ಮಕ 3D ನಕ್ಷೆ ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ…",
   "SELECTED DESTINATION": "ಆಯ್ಕೆ ಮಾಡಿದ ಗಮ್ಯಸ್ಥಾನ",
   "Clear destination": "ಗಮ್ಯಸ್ಥಾನ ಅಳಿಸಿ",
@@ -342,8 +366,8 @@
   "AI service unavailable.": "AI ಸೇವೆ ಲಭ್ಯವಿಲ್ಲ.",
   "Describe the hospital services you need.": "ನಿಮಗೆ ಬೇಕಾದ ಆಸ್ಪತ್ರೆ ಸೇವೆಗಳನ್ನು ವಿವರಿಸಿ.",
   "No requirement was provided.": "ಯಾವುದೇ ಅಗತ್ಯವನ್ನು ನಮೂದಿಸಿಲ್ಲ.",
-  "No configured hospital workflow prerequisites were applied.": "ಸಂರಚಿಸಿದ ಆಸ್ಪತ್ರೆ ಕಾರ್ಯವಿಧಾನದ ಪೂರ್ವಾಪೇಕ್ಷಿತಗಳನ್ನು ಅನ್ವಯಿಸಿಲ್ಲ.",
-  "Configured hospital workflow prerequisites were applied to this visit sequence.": "ಸಂರಚಿಸಿದ ಆಸ್ಪತ್ರೆ ಕಾರ್ಯವಿಧಾನದ ಪೂರ್ವಾಪೇಕ್ಷಿತಗಳನ್ನು ಈ ಭೇಟಿ ಕ್ರಮಕ್ಕೆ ಅನ್ವಯಿಸಲಾಗಿದೆ.",
+  "No configured hospital workflow prerequisites were applied.": "ಯಾವುದೇ ಸಂರಚಿಸಿದ ಆಸ್ಪತ್ರೆ ಕಾರ್ಯವಿಧಾನದ ಪೂರ್ವಾಪೇಕ್ಷೆಗಳನ್ನು ಅನ್ವಯಿಸಲಾಗಿಲ್ಲ.",
+  "Configured hospital workflow prerequisites were applied to this visit sequence.": "ಈ ಭೇಟಿ ಕ್ರಮಕ್ಕೆ ಸಂರಚಿಸಿದ ಆಸ್ಪತ್ರೆ ಕಾರ್ಯವಿಧಾನದ ಪೂರ್ವಾಪೇಕ್ಷೆಗಳನ್ನು ಅನ್ವಯಿಸಲಾಗಿದೆ.",
   "The AI suggestion did not match a configured hospital department. Please try a department name or ask hospital staff.": "AI ಸಲಹೆ ಸಂರಚಿಸಿದ ಆಸ್ಪತ್ರೆ ವಿಭಾಗಕ್ಕೆ ಹೊಂದಿಕೆಯಾಗಲಿಲ್ಲ. ವಿಭಾಗದ ಹೆಸರನ್ನು ಪ್ರಯತ್ನಿಸಿ ಅಥವಾ ಆಸ್ಪತ್ರೆಯ ಸಿಬ್ಬಂದಿಯನ್ನು ಕೇಳಿ.",
   "Suggested from the configured hospital department list.": "ಸಂರಚಿಸಿದ ಆಸ್ಪತ್ರೆ ವಿಭಾಗಗಳ ಪಟ್ಟಿಯಿಂದ ಸೂಚಿಸಲಾಗಿದೆ.",
   "No active route directions to repeat.": "ಪುನರಾವರ್ತಿಸಲು ಸಕ್ರಿಯ ಮಾರ್ಗಸೂಚಿಗಳಿಲ್ಲ.",
@@ -358,12 +382,21 @@
   "No speech was detected. Please try again.": "ಯಾವುದೇ ಧ್ವನಿ ಪತ್ತೆಯಾಗಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.",
   "No microphone was found. Connect a microphone or use text input.": "ಮೈಕ್ರೊಫೋನ್ ಕಂಡುಬಂದಿಲ್ಲ. ಮೈಕ್ರೊಫೋನ್ ಸಂಪರ್ಕಿಸಿ ಅಥವಾ ಪಠ್ಯ ನಮೂದನ್ನು ಬಳಸಿ.",
   "Speech recognition network service is unavailable. Use text input.": "ಧ್ವನಿ ಗುರುತಿಸುವಿಕೆಯ ನೆಟ್‌ವರ್ಕ್ ಸೇವೆ ಲಭ್ಯವಿಲ್ಲ. ಪಠ್ಯ ನಮೂದನ್ನು ಬಳಸಿ.",
+  "The browser speech service is unavailable. Check your internet connection or use text input.": "ಬ್ರೌಸರ್ ಧ್ವನಿ ಸೇವೆ ಲಭ್ಯವಿಲ್ಲ. ನಿಮ್ಮ ಇಂಟರ್ನೆಟ್ ಸಂಪರ್ಕವನ್ನು ಪರಿಶೀಲಿಸಿ ಅಥವಾ ಪಠ್ಯ ನಮೂದನ್ನು ಬಳಸಿ.",
+  "Retry voice recognition": "ಧ್ವನಿ ಗುರುತಿಸುವಿಕೆಯನ್ನು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ",
+  "Use server speech recognition": "ಸರ್ವರ್ ಧ್ವನಿ ಗುರುತಿಸುವಿಕೆಯನ್ನು ಬಳಸಿ",
+  "Server speech recognition failed. Use text input.": "ಸರ್ವರ್ ಧ್ವನಿ ಗುರುತಿಸುವಿಕೆ ವಿಫಲವಾಗಿದೆ. ಪಠ್ಯ ನಮೂದನ್ನು ಬಳಸಿ.",
+  "Selected language is not supported by this browser. Use text input.": "ಆಯ್ಕೆ ಮಾಡಿದ ಭಾಷೆಯನ್ನು ಈ ಬ್ರೌಸರ್ ಬೆಂಬಲಿಸುವುದಿಲ್ಲ. ಪಠ್ಯ ನಮೂದನ್ನು ಬಳಸಿ.",
   "Speech recognition failed. You can use text input instead.": "ಧ್ವನಿ ಗುರುತಿಸುವಿಕೆ ವಿಫಲವಾಗಿದೆ. ಪಠ್ಯ ನಮೂದನ್ನು ಬಳಸಿ.",
   "The route starts at the destination node, but physical arrival is not confirmed by indoor positioning.": "ಮಾರ್ಗವು ಗಮ್ಯಸ್ಥಾನದ ಬಿಂದುವಿನಿಂದ ಪ್ರಾರಂಭವಾಗುತ್ತದೆ; ಆದರೆ ಒಳಾಂಗಣ ಸ್ಥಳ ಪತ್ತೆಯಿಂದ ಭೌತಿಕ ಆಗಮನ ದೃಢೀಕರಿಸಿಲ್ಲ.",
   "Home": "ಮುಖಪುಟ",
   "Hospital Map": "ಆಸ್ಪತ್ರೆಯ ನಕ್ಷೆ",
   "Patient Assistant": "ರೋಗಿ ಸಹಾಯಕ",
   "Estimated Distance": "ಅಂದಾಜು ದೂರ",
+  "Estimated Walking Time": "ಅಂದಾಜು ನಡೆಯುವ ಸಮಯ",
+  "minutes": "ನಿಮಿಷ",
+  "Illustrative estimate at 0.8 m/s; actual time varies.": "0.8 ಮೀ/ಸೆ ವೇಗದ ಆಧಾರದ ಅಂದಾಜು; ನಿಜವಾದ ಸಮಯ ಬದಲಾಗಬಹುದು.",
+  "Navigation paused. Resume when you are ready.": "ಮಾರ್ಗದರ್ಶನ ವಿರಾಮದಲ್ಲಿದೆ. ಸಿದ್ಧವಾದಾಗ ಮುಂದುವರಿಸಿ.",
   "Next Direction": "ಮುಂದಿನ ದಿಕ್ಕು",
   "Pause navigation": "ಮಾರ್ಗದರ್ಶನ ವಿರಮಿಸಿ",
   "Resume navigation": "ಮಾರ್ಗದರ್ಶನ ಮುಂದುವರಿಸಿ",
@@ -414,5 +447,86 @@
   "No surveyed indoor route connections are configured. Add verified corridors and transitions before starting a journey.": "ಸಮೀಕ್ಷಿತ ಒಳಾಂಗಣ ಮಾರ್ಗ ಸಂಪರ್ಕಗಳನ್ನು ಸಂರಚಿಸಿಲ್ಲ. ಪ್ರಯಾಣ ಪ್ರಾರಂಭಿಸುವ ಮೊದಲು ಪರಿಶೀಲಿತ ಕಾರಿಡಾರ್ ಮತ್ತು ಬದಲಾವಣೆಗಳನ್ನು ಸೇರಿಸಿ.",
   "Hospital overview": "ಆಸ್ಪತ್ರೆಯ ಅವಲೋಕನ",
   "Wi-Fi:": "ವೈ-ಫೈ:",
-  "GPS accuracy overlaps the approximate campus boundary; entry is unconfirmed": "GPS ನಿಖರತೆ ಅಂದಾಜು ಆವರಣದ ಗಡಿಯನ್ನು ದಾಟುತ್ತದೆ; ಪ್ರವೇಶ ದೃಢೀಕರಿಸಿಲ್ಲ"
+  "GPS accuracy overlaps the approximate campus boundary; entry is unconfirmed": "GPS ನಿಖರತೆ ಅಂದಾಜು ಆವರಣದ ಗಡಿಯನ್ನು ದಾಟುತ್ತದೆ; ಪ್ರವೇಶ ದೃಢೀಕರಿಸಿಲ್ಲ",
+  "GPS uncertainty is within the configured proximity circle.": "GPS ಅನಿಶ್ಚಿತತೆ ಸಂರಚಿಸಿದ ಸಮೀಪ ವೃತ್ತದೊಳಗೆ ಇದೆ.",
+  "No active route directions": "ಯಾವುದೇ ಸಕ್ರಿಯ ಮಾರ್ಗದರ್ಶನವಿಲ್ಲ",
+  "Starting location": "ಪ್ರಾರಂಭದ ಸ್ಥಳ",
+  "Which configured destination did you mean": "ನೀವು ಯಾವ ಸಂರಚಿಸಿದ ಗಮ್ಯಸ್ಥಾನವನ್ನು ಉದ್ದೇಶಿಸಿದ್ದೀರಿ",
+  "Outside the configured proximity circle": "ಸಂರಚಿಸಿದ ಸಮೀಪ ವೃತ್ತದ ಹೊರಗೆ",
+  "Voice availability depends on your browser. Typed requests in English, Kannada, Hindi, or Malayalam are matched against the configured hospital directory.": "ವಾಯ್ಸ್ ಲಭ್ಯತೆ ನಿಮ್ಮ ಬ್ರೌಸರ್ ಮೇಲೆ ಅವಲಂಬಿತವಾಗಿದೆ. ಇಂಗ್ಲಿಷ್, ಕನ್ನಡ, ಹಿಂದಿ ಅಥವಾ ಮಲಯಾಳಂನಲ್ಲಿ ಟೈಪ್ ಮಾಡಿದ ವಿನಂತಿಗಳನ್ನು ಸಂರಚಿಸಿದ ಆಸ್ಪತ್ರೆ ಡೈರೆಕ್ಟರಿಯೊಂದಿಗೆ ಹೊಂದಿಸಲಾಗುತ್ತದೆ.",
+  "No surveyed elevator route to": "ಗೆ ಸಮೀಕ್ಷಿತ ಲಿಫ್ಟ್ ಮಾರ್ಗ ಲಭ್ಯವಿಲ್ಲ",
+  "I could not match": "ಹೊಂದಿಸಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ",
+  "Natural-language matching score, not a clinical assessment.": "ನೈಸರ್ಗಿಕ ಭಾಷಾ ಹೊಂದಾಣಿಕೆ ಅಂಕ, ವೈದ್ಯಕೀಯ ಮೌಲ್ಯಮಾಪನವಲ್ಲ.",
+  "Search a configured route destination": "ಸಂರಚಿಸಿದ ಮಾರ್ಗದ ಗಮ್ಯಸ್ಥಾನವನ್ನು ಹುಡುಕಿ",
+  "Selected language voice unavailable; directions are available as text.": "ಆಯ್ಕೆ ಮಾಡಿದ ಭಾಷೆಯ ಧ್ವನಿ ಲಭ್ಯವಿಲ್ಲ; ಮಾರ್ಗಸೂಚಿಗಳು ಪಠ್ಯವಾಗಿ ಲಭ್ಯವಿವೆ.",
+  "Father Muller Medical College Hospital": "ಫಾದರ್ ಮುಲ್ಲರ್ ಮೆಡಿಕಲ್ ಕಾಲೇಜು ಆಸ್ಪತ್ರೆ",
+  "Kankanady, Mangaluru, Karnataka, India": "ಕಂಕನಾಡಿ, ಮಂಗಳೂರು, ಕರ್ನಾಟಕ, ಭಾರತ",
+  "Navigate from your current GPS location to Father Muller Medical College Hospital using OpenStreetMap road data.": "OpenStreetMap ರಸ್ತೆ ದತ್ತಾಂಶವನ್ನು ಬಳಸಿ ನಿಮ್ಮ ಪ್ರಸ್ತುತ GPS ಸ್ಥಳದಿಂದ ಫಾದರ್ ಮುಲ್ಲರ್ ಮೆಡಿಕಲ್ ಕಾಲೇಜು ಆಸ್ಪತ್ರೆಗೆ ನ್ಯಾವಿಗೇಟ್ ಮಾಡಿ.",
+  "SELECT HOSPITAL BUILDING": "ಆಸ್ಪತ್ರೆಯ ಕಟ್ಟಡ ಆಯ್ಕೆಮಾಡಿ",
+  "Find My Location": "ನನ್ನ ಸ್ಥಳವನ್ನು ಹುಡುಕಿ",
+  "Navigate to Hospital": "ಆಸ್ಪತ್ರೆಗೆ ನ್ಯಾವಿಗೇಟ್ ಮಾಡಿ",
+  "Recenter Map": "ನಕ್ಷೆಯನ್ನು ಮರುಕೇಂದ್ರಗೊಳಿಸಿ",
+  "Stop Navigation": "ನ್ಯಾವಿಗೇಷನ್ ನಿಲ್ಲಿಸಿ",
+  "Open in Google Maps": "Google Maps ನಲ್ಲಿ ತೆರೆಯಿರಿ",
+  "Next direction": "ಮುಂದಿನ ದಿಕ್ಕು",
+  "Estimated travel": "ಅಂದಾಜು ಪ್ರಯಾಣ",
+  "Calculating driving route…": "ಚಾಲನಾ ಮಾರ್ಗವನ್ನು ಲೆಕ್ಕಹಾಕಲಾಗುತ್ತಿದೆ…",
+  "Estimated driving time": "ಅಂದಾಜು ಚಾಲನಾ ಸಮಯ",
+  "Preparing the driving route…": "ಚಾಲನಾ ಮಾರ್ಗವನ್ನು ಸಿದ್ಧಪಡಿಸಲಾಗುತ್ತಿದೆ…",
+  "Routing details": "ಮಾರ್ಗದ ವಿವರಗಳು",
+  "Starting latitude": "ಪ್ರಾರಂಭದ ಅಕ್ಷಾಂಶ",
+  "Starting longitude": "ಪ್ರಾರಂಭದ ರೇಖಾಂಶ",
+  "Destination latitude": "ಗಮ್ಯಸ್ಥಾನದ ಅಕ್ಷಾಂಶ",
+  "Destination longitude": "ಗಮ್ಯಸ್ಥಾನದ ರೇಖಾಂಶ",
+  "Routing API": "ಮಾರ್ಗ API",
+  "Road distance": "ರಸ್ತೆ ದೂರ",
+  "Estimated duration": "ಅಂದಾಜು ಅವಧಿ",
+  "Routing error": "ಮಾರ್ಗ ದೋಷ",
+  "None": "ಯಾವುದೂ ಇಲ್ಲ",
+  "Start on": "ಇಲ್ಲಿ ಪ್ರಾರಂಭಿಸಿ:",
+  "Start by heading": "ಈ ದಿಕ್ಕಿನಲ್ಲಿ ಪ್ರಾರಂಭಿಸಿ:",
+  "Start driving toward the hospital": "ಆಸ್ಪತ್ರೆಯ ಕಡೆಗೆ ಚಾಲನೆ ಪ್ರಾರಂಭಿಸಿ",
+  "Arrive at Father Muller Medical College Hospital": "ಫಾದರ್ ಮುಲ್ಲರ್ ಮೆಡಿಕಲ್ ಕಾಲೇಜು ಆಸ್ಪತ್ರೆಗೆ ತಲುಪಿ",
+  "Turn": "ತಿರುಗಿ",
+  "Continue": "ಮುಂದುವರಿಯಿರಿ",
+  "Enter the roundabout": "ವೃತ್ತಾಕಾರದ ಮಾರ್ಗ ಪ್ರವೇಶಿಸಿ",
+  "onto": "ಗೆ",
+  "Find your location to plan a road route to the hospital.": "ಆಸ್ಪತ್ರೆಗೆ ರಸ್ತೆ ಮಾರ್ಗವನ್ನು ಯೋಜಿಸಲು ನಿಮ್ಮ ಸ್ಥಳವನ್ನು ಹುಡುಕಿ.",
+  "Map controls": "ನಕ್ಷೆ ನಿಯಂತ್ರಣಗಳು",
+  "Zoom in": "ದೊಡ್ಡದಾಗಿ ನೋಡಿ",
+  "Zoom out": "ಚಿಕ್ಕದಾಗಿ ನೋಡಿ"
+  ,"Outdoor route service is unavailable. Please try again or open Google Maps.": "ಹೊರಾಂಗಣ ಮಾರ್ಗ ಸೇವೆ ಲಭ್ಯವಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ ಅಥವಾ Google Maps ತೆರೆಯಿರಿ."
+  ,"No road route is available from your current location to the hospital.": "ನಿಮ್ಮ ಪ್ರಸ್ತುತ ಸ್ಥಳದಿಂದ ಆಸ್ಪತ್ರೆಗೆ ರಸ್ತೆ ಮಾರ್ಗ ಲಭ್ಯವಿಲ್ಲ."
+  ,"Unable to calculate an outdoor road route. Please try again.": "ಹೊರಾಂಗಣ ರಸ್ತೆ ಮಾರ್ಗವನ್ನು ಲೆಕ್ಕಹಾಕಲು ಸಾಧ್ಯವಾಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
+  ,"OpenStreetMap map tiles are unavailable. Check your internet connection and try again.": "OpenStreetMap ನಕ್ಷೆ ಟೈಲ್‌ಗಳು ಲಭ್ಯವಿಲ್ಲ. ಇಂಟರ್ನೆಟ್ ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಿ ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ."
+  ,"How HospiNav works": "HospiNav ಹೇಗೆ ಕೆಲಸ ಮಾಡುತ್ತದೆ"
+  ,"Follow three simple steps to reach the right place.": "ಸರಿಯಾದ ಸ್ಥಳಕ್ಕೆ ತಲುಪಲು ಮೂರು ಸರಳ ಹಂತಗಳನ್ನು ಅನುಸರಿಸಿ."
+  ,"Choose where you want to go": "ನೀವು ಹೋಗಬೇಕಾದ ಸ್ಥಳವನ್ನು ಆಯ್ಕೆಮಾಡಿ"
+  ,"Search a department or facility.": "ವಿಭಾಗ ಅಥವಾ ಸೌಲಭ್ಯವನ್ನು ಹುಡುಕಿ."
+  ,"Find your location": "ನಿಮ್ಮ ಸ್ಥಳವನ್ನು ಹುಡುಕಿ"
+  ,"Use GPS outside or choose your building and floor inside.": "ಹೊರಗೆ GPS ಬಳಸಿ ಅಥವಾ ಒಳಗೆ ಕಟ್ಟಡ ಮತ್ತು ಮಹಡಿಯನ್ನು ಆಯ್ಕೆಮಾಡಿ."
+  ,"Follow the directions": "ಮಾರ್ಗಸೂಚಿಗಳನ್ನು ಅನುಸರಿಸಿ"
+  ,"Use the map and simple directions to reach your destination.": "ನಿಮ್ಮ ಗಮ್ಯಸ್ಥಾನಕ್ಕೆ ತಲುಪಲು ನಕ್ಷೆ ಮತ್ತು ಸರಳ ಮಾರ್ಗಸೂಚಿಗಳನ್ನು ಬಳಸಿ."
+  ,"Building to visit after arrival": "ತಲುಪಿದ ನಂತರ ಭೇಟಿ ನೀಡಬೇಕಾದ ಕಟ್ಟಡ"
+  ,"First follow the road route to the hospital. Then choose the building for indoor directions.": "ಮೊದಲು ಆಸ್ಪತ್ರೆಗೆ ರಸ್ತೆ ಮಾರ್ಗವನ್ನು ಅನುಸರಿಸಿ. ನಂತರ ಒಳಾಂಗಣ ಮಾರ್ಗಸೂಚಿಗಳಿಗೆ ಕಟ್ಟಡವನ್ನು ಆಯ್ಕೆಮಾಡಿ."
+  ,"Back to dashboard": "ಡ್ಯಾಶ್‌ಬೋರ್ಡ್‌ಗೆ ಹಿಂತಿರುಗಿ"
+  ,"Start over": "ಮತ್ತೆ ಪ್ರಾರಂಭಿಸಿ"
+  ,"New to HospiNav?": "HospiNav ಗೆ ಹೊಸಬರೇ?"
+  ,"Start with a department, use GPS when you are outside, and follow the route one step at a time.": "ವಿಭಾಗದಿಂದ ಪ್ರಾರಂಭಿಸಿ, ಹೊರಗಿರುವಾಗ GPS ಬಳಸಿ ಮತ್ತು ಮಾರ್ಗವನ್ನು ಹಂತ ಹಂತವಾಗಿ ಅನುಸರಿಸಿ."
+  ,"Get started": "ಪ್ರಾರಂಭಿಸಿ"
+  ,"Hide guide": "ಮಾರ್ಗದರ್ಶಿಯನ್ನು ಮರೆಮಾಡಿ"
+  ,"Show welcome guide": "ಸ್ವಾಗತ ಮಾರ್ಗದರ್ಶಿ ತೋರಿಸಿ"
+  ,"Patient help shortcuts": "ರೋಗಿ ಸಹಾಯ ಶಾರ್ಟ್‌ಕಟ್‌ಗಳು"
+  ,"Choose a common service to start directions quickly.": "ಮಾರ್ಗಸೂಚಿಗಳನ್ನು ತ್ವರಿತವಾಗಿ ಪ್ರಾರಂಭಿಸಲು ಸಾಮಾನ್ಯ ಸೇವೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ."
+  ,"Find emergency": "ತುರ್ತು ಸೇವೆ ಹುಡುಕಿ"
+  ,"Find pharmacy": "ಫಾರ್ಮಸಿ ಹುಡುಕಿ"
+  ,"Find laboratory": "ಪ್ರಯೋಗಾಲಯ ಹುಡುಕಿ"
+  ,"Find help desk": "ಸಹಾಯ ಕೇಂದ್ರ ಹುಡುಕಿ"
+  ,"AI backend response received. Suggestions are limited to the configured hospital directory.": "AI ಬ್ಯಾಕೆಂಡ್ ಪ್ರತಿಕ್ರಿಯೆ ಬಂದಿದೆ. ಸಲಹೆಗಳು ಕಾನ್ಫಿಗರ್ ಮಾಡಲಾದ ಆಸ್ಪತ್ರೆ ಡೈರೆಕ್ಟರಿಗೆ ಮಾತ್ರ ಸೀಮಿತವಾಗಿವೆ."
+  ,"AI service is unavailable, so multilingual rule-based matching is being used. You can always select destinations manually.": "AI ಸೇವೆ ಲಭ್ಯವಿಲ್ಲ, ಆದ್ದರಿಂದ ಬಹುಭಾಷಾ ನಿಯಮಾಧಾರಿತ ಹೊಂದಾಣಿಕೆಯನ್ನು ಬಳಸಲಾಗುತ್ತಿದೆ. ನೀವು ಯಾವಾಗಲೂ ಗಮ್ಯಸ್ಥಾನಗಳನ್ನು ಕೈಯಾರೆ ಆಯ್ಕೆ ಮಾಡಬಹುದು."
+  ,"AI Assistant is off. Manual destination selection is active; your text will not be sent for AI processing.": "AI ಸಹಾಯಕ ಆಫ್ ಆಗಿದೆ. ಕೈಯಾರೆ ಗಮ್ಯಸ್ಥಾನ ಆಯ್ಕೆ ಸಕ್ರಿಯವಾಗಿದೆ; ನಿಮ್ಮ ಪಠ್ಯವನ್ನು AI ಪ್ರಕ್ರಿಯೆಗೆ ಕಳುಹಿಸಲಾಗುವುದಿಲ್ಲ."
+  ,"You are offline": "ನೀವು ಆಫ್‌ಲೈನ್‌ನಲ್ಲಿದ್ದೀರಿ"
+  ,"Hospital directory and saved translations remain available. GPS, live maps, and road routes may need an internet connection.": "ಆಸ್ಪತ್ರೆ ಡೈರೆಕ್ಟರಿ ಮತ್ತು ಉಳಿಸಿದ ಅನುವಾದಗಳು ಲಭ್ಯವಿರುತ್ತವೆ. GPS, ಲೈವ್ ನಕ್ಷೆಗಳು ಮತ್ತು ರಸ್ತೆ ಮಾರ್ಗಗಳಿಗೆ ಇಂಟರ್ನೆಟ್ ಅಗತ್ಯವಿರಬಹುದು."
+  ,"Retry road route": "ರಸ್ತೆ ಮಾರ್ಗವನ್ನು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ"
+  ,"Retry map": "ನಕ್ಷೆಯನ್ನು ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ"
 }

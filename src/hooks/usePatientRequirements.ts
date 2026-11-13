@@ -184,6 +184,16 @@ export function usePatientRequirements({
     setJourneyStops([]);
   }, []);
 
+  const clearAnalysis = useCallback(() => {
+    setInput("");
+    setAnalysis(null);
+    setVisitSequence([]);
+    setJourneyStops([]);
+    setJourneyIndex(-1);
+    setJourneyActive(false);
+    setError("");
+  }, []);
+
   return {
     input,
     setInput,
@@ -202,6 +212,7 @@ export function usePatientRequirements({
     startJourney,
     advanceJourney,
     stopJourney,
+    clearAnalysis,
     isAIConfigured: aiNavigationAssistant.isAIConfigured,
   };
 }

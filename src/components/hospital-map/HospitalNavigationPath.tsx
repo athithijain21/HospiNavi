@@ -26,6 +26,11 @@ export default function HospitalNavigationPath({
 }: Props) {
   const paths = useMemo(() => {
     if (!route) return [];
+    const floorSegment = route.floorSegments.find(
+      (segment) => segment.buildingId === buildingId && segment.floor === floor,
+    );
+    if (!floorSegment) return [];
+    const floorNodeIds = new Set(floorSegment.nodeIds);
     return route.edges.flatMap((edge, index) => {
       if (edge.kind !== "corridor") return [];
       const from = route.nodes[index];
@@ -35,10 +40,8 @@ export default function HospitalNavigationPath({
         edge.path.length < 2 ||
         !from ||
         !to ||
-        from.buildingId !== buildingId ||
-        to.buildingId !== buildingId ||
-        from.floor !== floor ||
-        to.floor !== floor
+        !floorNodeIds.has(from.id) ||
+        !floorNodeIds.has(to.id)
       ) {
         return [];
       }

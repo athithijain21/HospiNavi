@@ -5,10 +5,15 @@ import type { IndoorRoute } from "../services/hospitalRouteService";
 import {
   createVoiceRecognition,
   getVoiceRecognitionSupport,
+  requestMicrophonePermission,
   voiceRecognitionErrorMessage,
   type SpeechRecognitionLike,
 } from "../services/voiceRecognitionService";
 import { voiceNavigationService } from "../services/voiceNavigationService";
+import {
+  createSpeechFallbackRecorder,
+  isSpeechFallbackConfigured,
+} from "../services/speechFallbackService";
 import { translateNavigationText } from "../services/translationService";
 import { useLanguage } from "./useLanguage";
 
@@ -67,12 +72,17 @@ export function useVoiceNavigation({
   language = "en-US",
 }: Props) {
   const { language: interfaceLanguage, t } = useLanguage();
-  const [status, setStatus] = useState<VoiceStatus>("idle");
+  const [support] = useState(getVoiceRecognitionSupport);
+  const [status, setStatus] = useState<VoiceStatus>(
+    support.supported ? "idle" : "unsupported",
+  );
   const [error, setError] = useState("");
-  const [supported] = useState(() => getVoiceRecognitionSupport().supported);
+  const supported = support.supported;
   const [transcript, setTranscript] = useState("");
   const recognition = useRef<SpeechRecognitionLike | null>(null);
+  const startInProgress = useRef(false);
   const recognitionFailed = useRef(false);
+  const fallbackRecorder = useRef<Awaited<ReturnType<typeof createSpeechFallbackRecorder>> | null>(null);
   const receivedResult = useRef(false);
   const statusRef = useRef(status);
   useEffect(() => {
@@ -129,24 +139,30 @@ export function useVoiceNavigation({
     onRecognizedTextRef.current = onRecognizedText;
   }, [onRecognizedText]);
 
+  useEffect(() => {
+    if (recognition.current) recognition.current.lang = language;
+  }, [language]);
+
   const speak = useCallback(
     (text: string) => {
       try {
         setError("");
-        const speechText = translateNavigationText(
-          text,
-          language.startsWith("kn") ? "kn" : "en",
-        );
+        const speechLanguage = language.startsWith("kn")
+          ? "kn"
+          : language.startsWith("hi")
+            ? "hi"
+            : language.startsWith("ml")
+              ? "ml"
+              : "en";
+        const speechText = translateNavigationText(text, speechLanguage);
         if (
-          language.startsWith("kn") &&
           typeof window !== "undefined" &&
           "speechSynthesis" in window &&
-          window.speechSynthesis.getVoices().length > 0 &&
           !window.speechSynthesis
             .getVoices()
-            .some((voice) => voice.lang.toLowerCase().startsWith("kn"))
+            .some((voice) => voice.lang.toLowerCase().startsWith(speechLanguage))
         ) {
-          setError(t("Kannada voice unavailable; directions are available as text.", interfaceLanguage));
+          setError(t("Selected language voice unavailable; directions are available as text.", interfaceLanguage));
           setStatus("idle");
           return;
         }
@@ -162,8 +178,8 @@ export function useVoiceNavigation({
       } catch (speechError) {
         setError(
           speechError instanceof Error
-            ? speechError.message
-            : "Speech output is unavailable.",
+            ? t(speechError.message, interfaceLanguage)
+            : t("Speech output is unavailable.", interfaceLanguage),
         );
         setStatus("error");
       }
@@ -214,21 +230,26 @@ export function useVoiceNavigation({
     [interfaceLanguage, speak, t],
   );
 
-  const startListening = useCallback(() => {
+  const startListening = useCallback(async () => {
+    if (startInProgress.current || recognition.current) return;
+    startInProgress.current = true;
     const support = getVoiceRecognitionSupport();
     if (!support.supported) {
+      startInProgress.current = false;
       setStatus("unsupported");
-      setError(support.reason);
+      setError(t(support.reason, interfaceLanguage));
       return;
     }
     setError("");
     try {
+      await requestMicrophonePermission();
       const currentRecognition = createVoiceRecognition(language);
       recognition.current = currentRecognition;
       recognitionFailed.current = false;
       receivedResult.current = false;
       currentRecognition.onresult = (event) => {
-        const text = event.results[0]?.[0]?.transcript?.trim();
+        const result = event.results[event.results.length - 1];
+        const text = result?.[0]?.transcript?.trim();
         if (text) {
           receivedResult.current = true;
           void processText(text);
@@ -236,11 +257,18 @@ export function useVoiceNavigation({
       };
       currentRecognition.onerror = (event) => {
         recognitionFailed.current = true;
-        setError(t(voiceRecognitionErrorMessage(event.error), interfaceLanguage));
+        const message = voiceRecognitionErrorMessage(event.error);
+        if (!message) {
+          setStatus("idle");
+          return;
+        }
+        setError(t(message, interfaceLanguage));
         setStatus("error");
       };
       currentRecognition.onend = () => {
+        if (recognition.current !== currentRecognition) return;
         recognition.current = null;
+        startInProgress.current = false;
         if (
           statusRef.current === "listening" &&
           !recognitionFailed.current &&
@@ -251,21 +279,86 @@ export function useVoiceNavigation({
       };
       setStatus("listening");
       currentRecognition.start();
+      startInProgress.current = false;
     } catch (recognitionError) {
-      setError(
-        recognitionError instanceof Error
-          ? t(recognitionError.message, interfaceLanguage)
-          : t("Unable to start speech recognition.", interfaceLanguage),
-      );
+      startInProgress.current = false;
+      if (
+        recognitionError instanceof DOMException &&
+        recognitionError.name === "NotAllowedError"
+      ) {
+        setError(
+          t(
+            "Microphone permission was denied. Allow microphone access or use text input.",
+            interfaceLanguage,
+          ),
+        );
+      } else if (
+        recognitionError instanceof DOMException &&
+        recognitionError.name === "NotFoundError"
+      ) {
+        setError(
+          t(
+            "No microphone was found. Connect a microphone or use text input.",
+            interfaceLanguage,
+          ),
+        );
+      } else {
+        setError(
+          recognitionError instanceof Error
+            ? t(recognitionError.message, interfaceLanguage)
+            : t("Unable to start speech recognition.", interfaceLanguage),
+        );
+      }
       setStatus("error");
     }
   }, [interfaceLanguage, language, processText, t]);
 
   const stopListening = useCallback(() => {
-    recognition.current?.stop();
+    const activeFallback = fallbackRecorder.current;
+    if (activeFallback) {
+      fallbackRecorder.current = null;
+      activeFallback.stop();
+      startInProgress.current = false;
+      if (statusRef.current === "listening") setStatus("processing");
+      void activeFallback.result.then(processText).catch((fallbackError: unknown) => {
+        setError(
+          fallbackError instanceof Error
+            ? t(fallbackError.message, interfaceLanguage)
+            : t("Server speech recognition failed. Use text input.", interfaceLanguage),
+        );
+        setStatus("error");
+      });
+      return;
+    }
+    const currentRecognition = recognition.current;
+    currentRecognition?.stop();
     recognition.current = null;
+    if (!currentRecognition) startInProgress.current = false;
     if (statusRef.current === "listening") setStatus("idle");
-  }, []);
+  }, [interfaceLanguage, processText, t]);
+
+  const retryListening = useCallback(() => {
+    stopListening();
+    void startListening();
+  }, [startListening, stopListening]);
+
+  const startServerFallback = useCallback(async () => {
+    if (!isSpeechFallbackConfigured() || startInProgress.current || fallbackRecorder.current) return;
+    startInProgress.current = true;
+    setError("");
+    try {
+      fallbackRecorder.current = await createSpeechFallbackRecorder(language);
+      setStatus("listening");
+    } catch (fallbackError) {
+      startInProgress.current = false;
+      setError(
+        fallbackError instanceof Error
+          ? t(fallbackError.message, interfaceLanguage)
+          : t("Server speech recognition failed. Use text input.", interfaceLanguage),
+      );
+      setStatus("error");
+    }
+  }, [interfaceLanguage, language, t]);
 
   const speakDirections = useCallback(
     (directions: string[]) => {
@@ -293,6 +386,7 @@ export function useVoiceNavigation({
   useEffect(
     () => () => {
       recognition.current?.stop();
+      fallbackRecorder.current?.stop();
       if (typeof window !== "undefined" && "speechSynthesis" in window) {
         window.speechSynthesis.cancel();
       }
@@ -307,6 +401,9 @@ export function useVoiceNavigation({
     transcript,
     setTranscript,
     startListening,
+    retryListening,
+    startServerFallback,
+    serverFallbackAvailable: isSpeechFallbackConfigured(),
     stopListening,
     processText,
     speak,

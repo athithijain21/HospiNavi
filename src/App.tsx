@@ -25,7 +25,14 @@ import {
 import type { IndoorRoute } from "./services/hospitalRouteService";
 import type { MapViewMode } from "./components/hospital-map/HospitalMap3D";
 import { useLanguage } from "./hooks/useLanguage";
-import { translateNavigationText, translateText } from "./services/translationService";
+import {
+  translateNavigationText,
+  translateText,
+  type Language,
+} from "./services/translationService";
+import AIAssistantToggle from "./components/AIAssistantToggle";
+import { useReverseGeocoding } from "./hooks/useReverseGeocoding";
+import { useOnlineStatus } from "./hooks/useOnlineStatus";
 
 const HospitalMap3D = lazy(
   () => import("./components/hospital-map/HospitalMap3D"),
@@ -43,7 +50,7 @@ function buildingName(buildingId: string) {
     `Building ${buildingId}`;
 }
 
-function matchesSearch(department: Department, query: string, language: "en" | "kn" = "en") {
+function matchesSearch(department: Department, query: string, language: Language = "en") {
   const normalizedQuery = query.trim().toLowerCase();
   if (!normalizedQuery) return true;
 
@@ -69,6 +76,7 @@ const navigationTabs: Tab[] = [
 
 export default function App() {
   const { language, setLanguage, t } = useLanguage();
+  const isOnline = useOnlineStatus();
   const [activeTab, setActiveTab] = useState<Tab>("Dashboard");
   const [building, setBuilding] = useState("A");
   const [floor, setFloor] = useState("Ground Floor");
@@ -97,6 +105,14 @@ export default function App() {
   const [accessibleRoute, setAccessibleRoute] = useState(false);
   const [search, setSearch] = useState("");
   const [destination, setDestination] = useState<Department | null>(null);
+  const [activeRouteOriginId, setActiveRouteOriginId] = useState("");
+  const [showWelcomeGuide, setShowWelcomeGuide] = useState(() => {
+    try {
+      return window.localStorage.getItem("hospinav-welcome-guide-seen") !== "true";
+    } catch {
+      return true;
+    }
+  });
   const [specialRoute, setSpecialRoute] = useState<{
     targetNodeId: string;
     targetLabel: string;
@@ -120,6 +136,7 @@ export default function App() {
     indoorPositioning,
   });
   const gpsPosition = automaticPosition.gpsPosition;
+  const readableGPSLocation = useReverseGeocoding(gpsPosition);
   const gpsLoading =
     automaticPosition.gpsTracking && automaticPosition.gpsPosition === null;
   const gpsError = automaticPosition.gpsError;
@@ -170,6 +187,27 @@ export default function App() {
     automaticPosition.matchedPosition?.node.buildingId;
   const autoMatchedFloor = automaticPosition.matchedPosition?.node.floor;
 
+  const dismissWelcomeGuide = () => {
+    setShowWelcomeGuide(false);
+    try {
+      window.localStorage.setItem("hospinav-welcome-guide-seen", "true");
+    } catch (error) {
+      console.error("Unable to save the HospiNav welcome guide state.", error);
+    }
+  };
+
+  const startOver = () => {
+    setActiveTab("Dashboard");
+    setSearch("");
+    setDestination(null);
+    setSpecialRoute(null);
+    setActiveRouteOriginId("");
+    setPendingStartNodeId(null);
+    setJourneyOriginOverride("");
+    setDemoJourneyOriginId(defaultDemoRouteStartNodeId);
+    setShowWelcomeGuide(false);
+  };
+
   const activeBuildingId = followDetectedPosition
     ? demoRouteMode
       ? selectedDemoOrigin?.buildingId ?? building
@@ -200,8 +238,16 @@ export default function App() {
   );
   const routeStartNode =
     routeGraph.nodes.find((node) => node.id === routeStartNodeId) ?? null;
-  const routeStartBuilding = routeStartNode?.buildingId ?? activeStartBuildingId;
-  const routeStartFloor = routeStartNode?.floor ?? activeStartFloor;
+  const activeRouteStartNode =
+    routeGraph.nodes.find((node) => node.id === activeRouteOriginId) ??
+    routeStartNode;
+  const routeStartBuilding =
+    activeRouteStartNode?.buildingId ?? activeStartBuildingId;
+  const routeStartFloor = activeRouteStartNode?.floor ?? activeStartFloor;
+  const calculatedRouteStartNodeId =
+    destination || specialRoute
+      ? activeRouteStartNode?.id ?? ""
+      : routeStartNodeId;
   const mapPositionEstimate: IndoorPositionEstimate | null =
     demoRouteMode
       ? null
@@ -220,14 +266,14 @@ export default function App() {
   const { route, error: routeError } = useIndoorNavigation({
     startBuilding: routeStartBuilding,
     startFloor: routeStartFloor,
-    startNodeId: routeStartNodeId,
+    startNodeId: calculatedRouteStartNodeId,
     accessibleOnly: accessibleRoute,
     destination,
     graph: routeGraph,
   });
   const specialRouteResult = useMemo(() => {
     if (!specialRoute) return { route: null, error: null };
-    if (!routeStartNodeId) {
+    if (!calculatedRouteStartNodeId) {
       return {
         route: null,
         error: "No confirmed live route origin is currently available for this route.",
@@ -235,7 +281,7 @@ export default function App() {
     }
     try {
       const currentRoute = findRouteToNode(
-        routeStartNodeId,
+        calculatedRouteStartNodeId,
         specialRoute.targetNodeId,
         accessibleRoute,
         routeGraph,
@@ -255,7 +301,7 @@ export default function App() {
             : "Unable to validate this configured route.",
       };
     }
-  }, [accessibleRoute, routeGraph, routeStartNodeId, specialRoute]);
+  }, [accessibleRoute, calculatedRouteStartNodeId, routeGraph, specialRoute]);
   const displayedRoute = specialRoute ? specialRouteResult.route : route;
   const activeMapViewMode = displayedRoute
     ? "floor"
@@ -271,13 +317,20 @@ export default function App() {
     setDestination(department);
     const requestedStartNode = start?.nodeId
       ? routeGraph.nodes.find((node) => node.id === start.nodeId)
-      : routeStartNode;
+      : routeGraph.nodes.find(
+          (node) =>
+            node.id ===
+            (demoRouteMode
+              ? demoJourneyOriginId
+              : automaticallyMatchedStartId || routeStartNodeId),
+        ) ?? routeStartNode;
     const mapStartBuilding = requestedStartNode?.buildingId ??
       start?.building ??
       department.building;
     const mapStartFloor = requestedStartNode?.floor ??
       start?.floor ??
       department.floor;
+    setActiveRouteOriginId(requestedStartNode?.id ?? "");
     if (start) {
       if (demoRouteMode && start.nodeId) {
         setDemoJourneyOriginId(start.nodeId);
@@ -305,8 +358,9 @@ export default function App() {
     setDestination(null);
     setSpecialRoute({ targetNodeId, targetLabel });
     const origin = routeGraph.nodes.find(
-      (node) => node.id === routeStartNodeId,
+      (node) => node.id === (automaticallyMatchedStartId || routeStartNodeId),
     );
+    setActiveRouteOriginId(origin?.id ?? "");
     if (origin) {
       setBuilding(origin.buildingId);
       setFloor(origin.floor);
@@ -318,6 +372,7 @@ export default function App() {
   const stopNavigation = () => {
     setDestination(null);
     setSpecialRoute(null);
+    setActiveRouteOriginId("");
   };
 
   const enableDemoRouteMode = () => {
@@ -325,6 +380,7 @@ export default function App() {
     if (!origin) return;
     setDemoRouteMode(true);
     setDemoJourneyOriginId(origin.id);
+    setActiveRouteOriginId(origin.id);
     setStartBuilding(origin.buildingId);
     setStartFloor(origin.floor);
     setStartNodeId(origin.id);
@@ -340,6 +396,7 @@ export default function App() {
     if (!origin) return;
     setDemoRouteOriginId(origin.id);
     setDemoJourneyOriginId(origin.id);
+    setActiveRouteOriginId(origin.id);
     setStartBuilding(origin.buildingId);
     setStartFloor(origin.floor);
     setStartNodeId(origin.id);
@@ -355,6 +412,7 @@ export default function App() {
     setJourneyOriginOverride("");
     setDestination(null);
     setSpecialRoute(null);
+    setActiveRouteOriginId("");
   };
 
   const changeStartBuilding = (id: string) => {
@@ -384,7 +442,7 @@ export default function App() {
   const changeMapFloor = (nextFloor: string) => {
     setFollowDetectedPosition(false);
     setFloor(nextFloor);
-    setBuilding(activeBuildingId);
+    setBuilding(building);
     setMapViewMode("floor");
   };
 
@@ -411,6 +469,7 @@ export default function App() {
     );
     if (!node) return;
     setStartNodeId(node.id);
+    setActiveRouteOriginId(node.id);
     setJourneyOriginOverride("");
     setStartBuilding(node.buildingId);
     setStartFloor(node.floor);
@@ -494,15 +553,37 @@ export default function App() {
             <small>HospiNav / {t(activeTab, language)}</small>
           </div>
           <div className="topbar-actions">
+            {activeTab !== "Dashboard" && (
+              <button
+                className="header-action"
+                type="button"
+                onClick={() => setActiveTab("Dashboard")}
+              >
+                {t("Back to dashboard", language)}
+              </button>
+            )}
+            {activeTab !== "Dashboard" && (
+              <button className="header-action" type="button" onClick={startOver}>
+                {t("Start over", language)}
+              </button>
+            )}
+            <AIAssistantToggle compact />
             <label className="language-selector">
               <span>{t("Language", language)}</span>
               <select
                 aria-label={t("Language", language)}
                 value={language}
-                onChange={(event) => setLanguage(event.target.value === "kn" ? "kn" : "en")}
+                onChange={(event) => {
+                  const nextLanguage = event.target.value;
+                  if (nextLanguage === "en" || nextLanguage === "kn" || nextLanguage === "hi" || nextLanguage === "ml") {
+                    setLanguage(nextLanguage);
+                  }
+                }}
               >
-                <option value="en">{t("English", language)}</option>
-                <option value="kn">{t("ಕನ್ನಡ", language)}</option>
+                <option value="en">English</option>
+                <option value="kn">ಕನ್ನಡ</option>
+                <option value="hi">हिन्दी</option>
+                <option value="ml">മലയാളം</option>
               </select>
             </label>
             <span className="online">
@@ -512,6 +593,12 @@ export default function App() {
         </header>
 
         <div className="content">
+          {!isOnline && (
+            <div className="offline-banner" role="status">
+              <strong>{t("You are offline", language)}</strong>
+              <span>{t("Hospital directory and saved translations remain available. GPS, live maps, and road routes may need an internet connection.", language)}</span>
+            </div>
+          )}
           {activeTab === "Dashboard" && (
             <>
               <section className="welcome">
@@ -534,6 +621,65 @@ export default function App() {
                 </span>
               </section>
 
+              {showWelcomeGuide && (
+                <section className="card welcome-guide" aria-labelledby="welcome-guide-title">
+                  <div>
+                    <h2 id="welcome-guide-title" className="section-title">
+                      {t("New to HospiNav?", language)}
+                    </h2>
+                    <p className="muted">
+                      {t("Start with a department, use GPS when you are outside, and follow the route one step at a time.", language)}
+                    </p>
+                  </div>
+                  <div className="welcome-guide-actions">
+                    <button className="primary" type="button" onClick={() => {
+                      dismissWelcomeGuide();
+                      setActiveTab("Indoor Navigation");
+                    }}>
+                      {t("Get started", language)}
+                    </button>
+                    <button className="secondary" type="button" onClick={dismissWelcomeGuide}>
+                      {t("Hide guide", language)}
+                    </button>
+                  </div>
+                </section>
+              )}
+
+              <section className="card how-it-works">
+                <div>
+                  <h2 className="section-title">{t("How HospiNav works", language)}</h2>
+                  <p className="muted">{t("Follow three simple steps to reach the right place.", language)}</p>
+                </div>
+                <div className="how-it-works-grid">
+                  <div className="how-it-works-step">
+                    <span aria-hidden="true">1</span>
+                    <div>
+                      <strong>{t("Choose where you want to go", language)}</strong>
+                      <small>{t("Search a department or facility.", language)}</small>
+                    </div>
+                  </div>
+                  <div className="how-it-works-step">
+                    <span aria-hidden="true">2</span>
+                    <div>
+                      <strong>{t("Find your location", language)}</strong>
+                      <small>{t("Use GPS outside or choose your building and floor inside.", language)}</small>
+                    </div>
+                  </div>
+                  <div className="how-it-works-step">
+                    <span aria-hidden="true">3</span>
+                    <div>
+                      <strong>{t("Follow the directions", language)}</strong>
+                      <small>{t("Use the map and simple directions to reach your destination.", language)}</small>
+                    </div>
+                  </div>
+                </div>
+                {!showWelcomeGuide && (
+                  <button className="text-button" type="button" onClick={() => setShowWelcomeGuide(true)}>
+                    {t("Show welcome guide", language)}
+                  </button>
+                )}
+              </section>
+
               <section className="card gps-box" aria-live="polite">
                 <div>
                   <strong>{t("Automatic location", language)}</strong>
@@ -549,11 +695,71 @@ export default function App() {
                     </p>
                   )}
                   {gpsPosition && (
-                    <p>
-                      GPS: {gpsPosition.latitude.toFixed(5)},{" "}
-                      {gpsPosition.longitude.toFixed(5)} · ±
-                      {Math.round(gpsPosition.accuracy)} m
-                    </p>
+                    <div className="gps-readable-location">
+                      <strong>{t("Detected Location", language)}</strong>
+                      {readableGPSLocation.status === "loading" && (
+                        <p>{t("Looking up approximate location name…", language)}</p>
+                      )}
+                      {readableGPSLocation.status === "success" &&
+                        readableGPSLocation.location && (
+                          <>
+                            <p className="gps-location-name">
+                              {readableGPSLocation.location.locality ??
+                                readableGPSLocation.location.road ??
+                                readableGPSLocation.location.city ??
+                                readableGPSLocation.location.displayName}
+                            </p>
+                            <p>
+                              {[readableGPSLocation.location.city, readableGPSLocation.location.state]
+                                .filter(Boolean)
+                                .join(", ")}
+                            </p>
+                            {readableGPSLocation.location.district && (
+                              <small>
+                                {t("District:", language)}{" "}
+                                {readableGPSLocation.location.district}
+                              </small>
+                            )}
+                            {readableGPSLocation.location.road && (
+                              <small>
+                                {t("Road:", language)} {readableGPSLocation.location.road}
+                              </small>
+                            )}
+                            <small>{t("Approximate location name", language)}</small>
+                            <small>
+                              <a
+                                href="https://www.openstreetmap.org/copyright"
+                                target="_blank"
+                                rel="noreferrer"
+                              >
+                                {t("© OpenStreetMap contributors", language)}
+                              </a>
+                            </small>
+                          </>
+                        )}
+                      {readableGPSLocation.status === "error" && (
+                        <p className="error">
+                          {t("Readable location unavailable.", language)}
+                        </p>
+                      )}
+                      {gpsPosition.accuracy > 50 && (
+                        <p className="gps-accuracy-warning">
+                          {t("GPS accuracy is too poor for a precise location name.", language)}
+                        </p>
+                      )}
+                      <details>
+                        <summary>{t("More Details", language)}</summary>
+                        <p>
+                          {t("Latitude:", language)} {gpsPosition.latitude.toFixed(6)}
+                        </p>
+                        <p>
+                          {t("Longitude:", language)} {gpsPosition.longitude.toFixed(6)}
+                        </p>
+                        <p>
+                          {t("GPS accuracy:", language)} ±{Math.round(gpsPosition.accuracy)} m
+                        </p>
+                      </details>
+                    </div>
                   )}
                   {gpsError && <p className="error">{t(gpsError, language)}</p>}
                 </div>
@@ -641,6 +847,30 @@ export default function App() {
                   </button>
                 </div>
               </section>
+
+              <section className="card patient-shortcuts">
+                <h2 className="section-title">{t("Patient help shortcuts", language)}</h2>
+                <p className="muted">{t("Choose a common service to start directions quickly.", language)}</p>
+                <div className="quick-access">
+                  {[
+                    ["Emergency", "Find emergency"],
+                    ["Pharmacy", "Find pharmacy"],
+                    ["Laboratory", "Find laboratory"],
+                    ["Billing Counter", "Find help desk"],
+                  ].map(([departmentName, shortcutLabel]) => {
+                    const department = departments.find((item) => item.name === departmentName);
+                    return department ? (
+                      <button
+                        key={department.id}
+                        type="button"
+                        onClick={() => startNavigation(department)}
+                      >
+                        {t(shortcutLabel, language)}
+                      </button>
+                    ) : null;
+                  })}
+                </div>
+              </section>
             </>
           )}
 
@@ -725,7 +955,7 @@ export default function App() {
                 onChangeDemoRouteStart={changeDemoRouteOrigin}
                 startBuilding={routeStartBuilding}
                 startFloor={routeStartFloor}
-                startNodeId={routeStartNodeId}
+                startNodeId={calculatedRouteStartNodeId}
                 accessibleOnly={accessibleRoute}
                 currentPosition={mapPositionEstimate}
                 destination={destination}
@@ -1101,8 +1331,8 @@ export default function App() {
                         </div>
                       </div>
                       <div className="route-summary">
-                        <strong>{t("Estimated Route Distance", language)}</strong>
-                        <h3>{route.distance} {t("metres", language)}</h3>
+                        <strong>{t("Estimated Distance", language)}</strong>
+                        <h3>{route.distance.toFixed(1)} {t("metres", language)}</h3>
                         <small>
                           {route.source === "demo"
                             ? t("Illustrative distance from simulated route segments.", language)

@@ -180,6 +180,8 @@ empty graph. Before enabling directions, the hospital must provide:
   elevator/stair landings, and department entrances;
 - surveyed, positive distances and only physically walkable edges, including
   approved floor/building transitions;
+- an explicit `walkable` flag and matching `connectedNodeIds` adjacency list
+  for every route node;
 - verified travel direction for each edge (`bidirectional` or forward-only);
 - department node IDs linked to existing department IDs;
 - accessible flags for each connection, based on a facilities review;
@@ -201,6 +203,15 @@ The sample graph is isolated from the surveyed route graph and the interface
 labels its paths and instructions as simulated. It must not be used to guide
 real patients or treated as a surveyed representation of the hospital.
 
+The sample graph connects main-corridor segments, room-door destinations,
+stair and lift access, and building entrances; its corridor polylines follow
+the illustrative 3D floor layout rather than cutting across room centers.
+Each sample edge explicitly marks walkability and accessibility, and nodes
+carry their connected-node IDs. Sample distances are generated from the
+illustrative coordinates and edge configuration; they are not hospital
+measurements. The real route graph remains empty until surveyed pathways and
+entrances are approved and configured.
+
 Route graph validation rejects unknown node references, invalid distances,
 unmarked floor changes, and unmarked building transitions. The Accessible
 route option searches only edges marked accessible. If no confirmed origin or
@@ -220,9 +231,10 @@ confidence-gated reading maps to a different configured graph node; it cannot
 provide continuous room-level movement unless the hospital deploys calibrated
 positioning nodes and floor-plan coordinates. Arrival is announced only when
 the final route node has a matching configured positioning ID and confidence
-meets the detection threshold. Route distance is shown from measured graph
-edges; estimated travel time is omitted because no walking-speed model is
-configured.
+meets the detection threshold. Route distance is shown from configured graph
+edges. The navigation panel's walking-time value is only an illustrative
+estimate using a fixed 0.8 m/s pace; it is not an individual prediction and
+excludes lift waits, congestion, and other delays.
 The requirement understanding and route orchestration are centralized in
 `src/services/aiNavigationAssistant.ts`; intent matching, AI fallback, and
 workflow configuration remain in their existing reusable services.
@@ -246,6 +258,31 @@ Keep credentials and private AI-provider keys on the backend, never in Vite
 frontend environment variables. User text may contain sensitive information;
 avoid entering personal identifiers or medical details, and review the
 organization's backend privacy and retention policy before enabling it.
+
+### Speech-to-text fallback backend
+
+Browser speech recognition remains the first option. When its service reports a
+network or service failure, the Patient Requirements panel can use the local
+Express fallback at `VITE_SPEECH_TO_TEXT_ENDPOINT`. Start it with:
+
+```powershell
+npm run server
+```
+
+Create a server-only `.env` file (do not commit it) containing:
+
+```text
+PORT=8787
+CLIENT_ORIGIN=http://localhost:5173
+SPEECH_REGION=<Azure Speech resource region>
+SPEECH_KEY=<Azure Speech subscription key>
+```
+
+Set `VITE_SPEECH_TO_TEXT_ENDPOINT=http://localhost:8787/api/speech-to-text`
+for the Vite app. The endpoint accepts a multipart `POST` with an `audio` WAV
+file and a `locale` field. The locale must be one of `en-IN`, `kn-IN`, `hi-IN`,
+or `ml-IN`; it returns `{ "locale": "en-IN", "text": "..." }`. Azure
+credentials stay on the server and are never bundled into the frontend.
 
 Voice recognition uses `SpeechRecognition` or
 `webkitSpeechRecognition` when supported; browser implementations and
@@ -297,6 +334,14 @@ The map displays the campus reference and approximate circle separately from
 building markers. No building entrance coordinates are configured, so GPS
 cannot identify a building or floor, and outdoor building-to-building routing
 is unavailable until entrances are surveyed.
+
+When a GPS fix is available, the dashboard also requests a human-readable
+address from OpenStreetMap Nominatim. The locality, road, city, district, and
+state are provider results and are labelled approximate; they do not establish
+hospital entry or indoor position. Requests are rounded and cached by
+coordinate and throttled to approximately one request per second to respect
+Nominatim's usage policy. Exact coordinates remain available under
+`More Details`, and the UI links to the required OpenStreetMap attribution.
 
 Automatic route-origin matching accepts only:
 

@@ -54,6 +54,11 @@ const voiceStatusLabels = {
   error: "Voice error",
 };
 
+type VoiceLanguage = "en-IN" | "kn-IN" | "hi-IN" | "ml-IN";
+const voiceLanguageStorageKey = "hospinav-voice-language";
+
+const ILLUSTRATIVE_WALKING_SPEED_METRES_PER_SECOND = 0.8;
+
 export default function PatientJourneyPanel({
   departments,
   startBuilding,
@@ -75,12 +80,32 @@ export default function PatientJourneyPanel({
   onSelectSpecialRoute,
   onStopNavigation,
 }: Props) {
-  const { language, setLanguage, t } = useLanguage();
+  const { language, t, aiAssistantEnabled } = useLanguage();
+  const [voiceLanguage, setVoiceLanguage] = useState<VoiceLanguage>(() => {
+    try {
+      const stored = window.localStorage.getItem(voiceLanguageStorageKey);
+      return stored === "en-IN" ||
+        stored === "kn-IN" ||
+        stored === "hi-IN" ||
+        stored === "ml-IN"
+        ? stored
+        : "en-IN";
+    } catch {
+      return "en-IN";
+    }
+  });
   const [voiceDestinationId, setVoiceDestinationId] = useState<number | null>(null);
   const [additionalDestinationId, setAdditionalDestinationId] = useState("");
   const [navigationActive, setNavigationActive] = useState(false);
+  const [navigationPaused, setNavigationPaused] = useState(false);
   const [voiceClarification, setVoiceClarification] = useState("");
-  const voiceLanguage = language === "kn" ? "kn-IN" : "en-IN";
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(voiceLanguageStorageKey, voiceLanguage);
+    } catch (error) {
+      console.error("Unable to persist the selected HospiNav voice language.", error);
+    }
+  }, [voiceLanguage]);
   const lastAnnouncedPosition = useRef("");
   const pendingFloorAnnouncement = useRef("");
   const lastSpokenInstruction = useRef("");
@@ -102,6 +127,10 @@ export default function PatientJourneyPanel({
     accessibleOnly,
     graph: routeGraph,
   });
+  const { clearAnalysis } = requirements;
+  useEffect(() => {
+    if (!aiAssistantEnabled) clearAnalysis();
+  }, [aiAssistantEnabled, clearAnalysis]);
   const voice = useVoiceNavigation({
     departments,
     onNavigate: (department) => {
@@ -123,17 +152,35 @@ export default function PatientJourneyPanel({
           : undefined,
       );
       setNavigationActive(hasRoute);
+      setNavigationPaused(false);
       return hasRoute;
     },
-    onRequirement: (text) => requirements.analyze(text),
+    onRequirement: (text) => {
+      if (aiAssistantEnabled) {
+        return requirements.analyze(text);
+      }
+      setVoiceClarification(
+        t(
+          "AI Assistant is disabled. Please select a configured destination manually.",
+          language,
+        ),
+      );
+    },
     onStopNavigation: () => {
       requirements.stopJourney();
       setVoiceDestinationId(null);
       setNavigationActive(false);
+      setNavigationPaused(false);
       onStopNavigation();
     },
-    onPauseNavigation: pauseVoiceGuidance,
-    onResumeNavigation: resumeVoiceGuidance,
+    onPauseNavigation: () => {
+      setNavigationPaused(true);
+      pauseVoiceGuidance();
+    },
+    onResumeNavigation: () => {
+      setNavigationPaused(false);
+      resumeVoiceGuidance();
+    },
     getPosition: () =>
       currentPosition
         ? {
@@ -169,6 +216,7 @@ export default function PatientJourneyPanel({
     onSelectRoute: (selectedRoute, targetLabel, targetNodeId) => {
       setVoiceDestinationId(null);
       setNavigationActive(true);
+      setNavigationPaused(false);
       onSelectSpecialRoute(selectedRoute, targetLabel, targetNodeId);
     },
     onClarification: setVoiceClarification,
@@ -219,9 +267,10 @@ export default function PatientJourneyPanel({
       ? "The route starts at the destination node, but physical arrival is not confirmed by indoor positioning."
       : routeInstruction;
   const navigationGuidanceActive =
-    navigationActive ||
-    (activeJourneyStopId !== null &&
-      destination?.id === activeJourneyStopId);
+    !navigationPaused &&
+    (navigationActive ||
+      (activeJourneyStopId !== null &&
+        destination?.id === activeJourneyStopId));
   useEffect(() => {
     if (
       !currentPosition ||
@@ -260,6 +309,7 @@ export default function PatientJourneyPanel({
         : activeInstruction,
     );
   }, [
+    aiAssistantEnabled,
     activeInstruction,
     activeInstructionIndex,
     destination?.id,
@@ -280,6 +330,7 @@ export default function PatientJourneyPanel({
     const first = requirements.startJourney();
     if (first) {
       setNavigationActive(true);
+      setNavigationPaused(false);
       onSelectDestination(first, {
         building: startBuilding,
         floor: startFloor,
@@ -313,6 +364,7 @@ export default function PatientJourneyPanel({
     requirements.stopJourney();
     setVoiceDestinationId(null);
     setNavigationActive(false);
+    setNavigationPaused(false);
     onStopNavigation();
   };
 
@@ -331,6 +383,31 @@ export default function PatientJourneyPanel({
         <span className="voice-status" role="status">
           {t(voiceStatusLabels[voice.status], language)}
         </span>
+      </div>
+      <div className="patient-assistant-control">
+        <div className="patient-assistant-feedback" role="status">
+          <strong>
+            {t(
+              aiAssistantEnabled ? "AI Assistant Enabled" : "AI Assistant Disabled",
+              language,
+            )}
+          </strong>
+          <span>
+            {t(
+              aiAssistantEnabled
+                ? "Smart patient requirement assistance is available."
+                : "You can manually select hospital departments and facilities.",
+              language,
+            )}
+          </span>
+          {aiAssistantEnabled && (
+            <small>
+              {requirements.isAIConfigured
+                ? t("AI backend is configured.", language)
+                : t("AI backend unavailable; using rule-based matching.", language)}
+            </small>
+          )}
+        </div>
       </div>
       <div className={isDemoRouteMode ? "demo-route-banner is-active" : "demo-route-banner"}>
         <div>
@@ -372,30 +449,51 @@ export default function PatientJourneyPanel({
         )}
       </div>
 
-      <label htmlFor="patient-requirement">{t("WHAT SERVICES DO YOU NEED?", language)}</label>
+      {aiAssistantEnabled ? (
+        <label htmlFor="patient-requirement">{t("WHAT SERVICES DO YOU NEED?", language)}</label>
+      ) : (
+        <label htmlFor="manual-destination">{t("SELECT DESTINATIONS MANUALLY", language)}</label>
+      )}
       <div className="patient-input-language">
         <label htmlFor="patient-language">{t("VOICE LANGUAGE", language)}</label>
         <select
           id="patient-language"
           value={voiceLanguage}
-          onChange={(event) => setLanguage(event.target.value === "kn-IN" ? "kn" : "en")}
+          onChange={(event) => setVoiceLanguage(event.target.value as VoiceLanguage)}
         >
-          <option value="en-IN">{t("English", language)}</option>
-          <option value="kn-IN">{t("ಕನ್ನಡ", language)}</option>
+          <option value="en-IN">English</option>
+          <option value="kn-IN">ಕನ್ನಡ</option>
+          <option value="hi-IN">हिन्दी</option>
+          <option value="ml-IN">മലയാളം</option>
         </select>
         <small>
-          {t("Voice availability depends on your browser. Typed English and Kannada requests are matched against the configured hospital directory.", language)}
+          {aiAssistantEnabled
+            ? t("Voice availability depends on your browser. Typed requests in English, Kannada, Hindi, or Malayalam are matched against the configured hospital directory.", language)
+            : t("AI processing is off. Use the configured destination selector below.", language)}
         </small>
       </div>
-      <textarea
-        id="patient-requirement"
-        className="patient-requirement-input"
-        value={requirements.input}
-        onChange={(event) => requirements.setInput(event.target.value)}
-        placeholder={t("For example: I need a general consultation and a blood test.", language)}
-        rows={3}
-      />
-      <div className="patient-input-actions">
+      {aiAssistantEnabled ? (
+        <p className="assistant-fallback-note" role="status">
+          {requirements.analysis?.source === "ai-backend"
+            ? t("AI backend response received. Suggestions are limited to the configured hospital directory.", language)
+            : t("AI service is unavailable, so multilingual rule-based matching is being used. You can always select destinations manually.", language)}
+        </p>
+      ) : (
+        <p className="assistant-fallback-note" role="status">
+          {t("AI Assistant is off. Manual destination selection is active; your text will not be sent for AI processing.", language)}
+        </p>
+      )}
+      {aiAssistantEnabled ? (
+        <>
+          <textarea
+            id="patient-requirement"
+            className="patient-requirement-input"
+            value={requirements.input}
+            onChange={(event) => requirements.setInput(event.target.value)}
+            placeholder={t("For example: I need a general consultation and a blood test.", language)}
+            rows={3}
+          />
+          <div className="patient-input-actions">
         <button
           className="primary"
           onClick={() => void requirements.analyze()}
@@ -427,7 +525,76 @@ export default function PatientJourneyPanel({
         >
           {t("Process as command", language)}
         </button>
-      </div>
+          </div>
+        </>
+      ) : (
+        <div className="patient-manual-destinations">
+          <select
+            id="manual-destination"
+            value={additionalDestinationId}
+            onChange={(event) => setAdditionalDestinationId(event.target.value)}
+          >
+            <option value="">{t("Choose a department or facility", language)}</option>
+            {departments
+              .filter((department) => !analyzedDepartments.has(department.id))
+              .map((department) => (
+                <option key={department.id} value={department.id}>
+                  {t(department.name, language)} · {department.building} · {t(department.floor, language)}
+                </option>
+              ))}
+          </select>
+          <button
+            className="secondary"
+            disabled={!additionalDestinationId}
+            onClick={() => {
+              requirements.addDestination(Number(additionalDestinationId));
+              setAdditionalDestinationId("");
+            }}
+            type="button"
+          >
+            {t("Add stop", language)}
+          </button>
+        </div>
+      )}
+      {!aiAssistantEnabled && requirements.visitSequence.length > 0 && (
+        <div className="patient-manual-sequence">
+          <h3>{t("Selected destinations", language)}</h3>
+          <ol className="patient-visit-sequence">
+            {requirements.visitSequence.map((department) => (
+              <li key={department.id}>
+                <span className="patient-sequence-number">•</span>
+                <div>
+                  <strong>{t(department.name, language)}</strong>
+                  <small>{department.building} · {t(department.floor, language)} · {department.room}</small>
+                </div>
+                <button
+                  className="secondary patient-remove"
+                  onClick={() => requirements.removeDestination(department.id)}
+                  type="button"
+                >
+                  {t("Remove", language)}
+                </button>
+              </li>
+            ))}
+          </ol>
+          <div className="patient-journey-actions">
+            {!requirements.journeyActive ? (
+              <button
+                className="primary"
+                disabled={!requirements.routeAvailable}
+                onClick={startJourney}
+                type="button"
+              >
+                {t("Start Journey", language)}
+              </button>
+            ) : (
+              <button className="secondary" onClick={stopJourney} type="button">
+                {t("Stop Journey", language)}
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       {(voice.transcript || voice.error) && (
         <div className={voice.error ? "voice-feedback error" : "voice-feedback"}>
           {voice.transcript && (
@@ -440,7 +607,23 @@ export default function PatientJourneyPanel({
               {t(voiceClarification, language)}
             </p>
           )}
-          {voice.error && <span role="alert">{t(voice.error, language)}</span>}
+          {voice.error && (
+            <>
+              <span role="alert">{t(voice.error, language)}</span>
+              {voice.status === "error" && voice.supported && (
+                <>
+                  <button className="secondary" onClick={voice.retryListening} type="button">
+                    {t("Retry voice recognition", language)}
+                  </button>
+                  {voice.serverFallbackAvailable && (
+                    <button className="secondary" onClick={voice.startServerFallback} type="button">
+                      {t("Use server speech recognition", language)}
+                    </button>
+                  )}
+                </>
+              )}
+            </>
+          )}
         </div>
       )}
 
@@ -460,18 +643,51 @@ export default function PatientJourneyPanel({
                     : t("No indoor position; confirm a configured starting point to begin.", language)}
               </small>
             </div>
-            <span>
-              {route.distance.toFixed(1)} m ·{" "}
-              {t(isDemoRouteMode
-                ? "simulated example distance"
-                : "configured surveyed distance", language)}
-            </span>
+          </div>
+          <div className="indoor-guidance-metrics">
+            <div>
+              <span>{t("Estimated Distance", language)}</span>
+              <strong>{route.distance.toFixed(1)} m</strong>
+              <small>
+                {t(isDemoRouteMode
+                  ? "simulated example distance"
+                  : "configured surveyed distance", language)}
+              </small>
+            </div>
+            <div>
+              <span>{t("Estimated Walking Time", language)}</span>
+              <strong>
+                {Math.max(
+                  1,
+                  Math.ceil(
+                    route.distance /
+                      ILLUSTRATIVE_WALKING_SPEED_METRES_PER_SECOND /
+                      60,
+                  ),
+                )}{" "}
+                {t("minutes", language)}
+              </strong>
+              <small>{t("Illustrative estimate at 0.8 m/s; actual time varies.", language)}</small>
+            </div>
           </div>
           <p className="indoor-guidance-step">
-            {navigationActive
+            <strong>{t("Next Direction", language)}: </strong>
+            {navigationPaused
+              ? t("Navigation paused. Resume when you are ready.", language)
+              : navigationActive
               ? translateNavigationText(activeInstruction ?? "Follow the highlighted configured route.", language)
               : t("Route calculated. Start navigation when you are ready.", language)}
           </p>
+          <small>
+            {t("Current Floor", language)}:{" "}
+            {t(
+              currentPosition?.floor ??
+                route.nodes[Math.max(0, routeNodeIndex)]?.floor ??
+                route.nodes[0]?.floor ??
+                startFloor,
+              language,
+            )}
+          </small>
           {routeNodeIndex >= 0 && (
             <small>
               Position checkpoint {routeNodeIndex + 1} of {route.nodes.length}
@@ -486,7 +702,10 @@ export default function PatientJourneyPanel({
             {!navigationActive ? (
               <button
                 className="primary"
-                onClick={() => setNavigationActive(true)}
+                onClick={() => {
+                  setNavigationActive(true);
+                  setNavigationPaused(false);
+                }}
                 type="button"
               >
                 {t("Start Navigation", language)}
@@ -496,6 +715,7 @@ export default function PatientJourneyPanel({
                 className="secondary"
                 onClick={() => {
                   setNavigationActive(false);
+                  setNavigationPaused(false);
                   onStopNavigation();
                 }}
                 type="button"
@@ -504,14 +724,21 @@ export default function PatientJourneyPanel({
               </button>
             )}
             {navigationActive && (
-              <>
-                <button className="secondary" onClick={voice.pause} type="button">
-                  {t("Pause voice", language)}
-                </button>
-                <button className="secondary" onClick={voice.resume} type="button">
-                  {t("Resume voice", language)}
-                </button>
-              </>
+              <button
+                className="secondary"
+                onClick={() => {
+                  if (navigationPaused) {
+                    setNavigationPaused(false);
+                    voice.resume();
+                  } else {
+                    setNavigationPaused(true);
+                    voice.pause();
+                  }
+                }}
+                type="button"
+              >
+                {t(navigationPaused ? "Resume navigation" : "Pause navigation", language)}
+              </button>
             )}
             <button
               className="secondary"
@@ -526,6 +753,11 @@ export default function PatientJourneyPanel({
 
       {requirements.analysis && (
         <div className="patient-analysis">
+          {requirements.analysis.plan.response && (
+            <p className="patient-clarification" role="status">
+              {requirements.analysis.plan.response}
+            </p>
+          )}
           <p className="patient-analysis-source">
             {requirements.analysis.source === "ai-backend"
               ? t("AI backend suggestion", language)
@@ -568,6 +800,28 @@ export default function PatientJourneyPanel({
                           ? ` · ${t("matched", language)} ${requirement.matchedTerms.map((term) => t(term, language)).join(", ")}`
                           : ""}
                       </small>
+                      {requirement.status === "ambiguous" && (
+                        <div className="patient-candidate-destinations">
+                          <small>{t("Choose from these configured destinations", language)}</small>
+                          {requirement.candidateDepartmentIds
+                            .map((id) => departments.find((department) => department.id === id))
+                            .filter((department): department is HospitalDepartment => Boolean(department))
+                            .map((department) => (
+                              <button
+                                className="secondary"
+                                disabled={analyzedDepartments.has(department.id)}
+                                key={department.id}
+                                onClick={() => requirements.addDestination(department.id)}
+                                type="button"
+                              >
+                                {t(department.name, language)}
+                              </button>
+                            ))}
+                        </div>
+                      )}
+                      {requirement.status === "unmatched" && (
+                        <small>{t("Choose from these configured destinations", language)}</small>
+                      )}
                     </span>
                   </li>
                 ))}

@@ -162,7 +162,8 @@ export function createHospitalGeofenceTracker() {
       if (!match || match.status === "uncertain") {
         candidateStatus = null;
         candidateCount = 0;
-        if (!match) lastReliableTimestamp = 0;
+        confirmedStatus = null;
+        lastReliableTimestamp = 0;
         if (snapshot.match !== null || snapshot.transition !== null) {
           publish(match, null);
         }

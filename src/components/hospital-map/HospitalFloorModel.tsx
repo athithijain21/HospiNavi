@@ -82,7 +82,7 @@ export default function HospitalFloorModel({
         <boxGeometry args={[11.45, 0.06, 8.25]} />
         <meshStandardMaterial color="#bdcdcc" roughness={0.76} />
       </mesh>
-      <HospitalCorridor />
+      <HospitalCorridor spaces={spaces} />
       {spaces.map((space) => (
         <HospitalRoom
           key={space.id}

@@ -1,8 +1,10 @@
 import type { HospitalDepartment } from "../data/hospitalMapData";
+import { hospitalServiceAliases } from "../data/hospitalServiceAliases";
 import {
   orderDepartmentsByWorkflow,
   type HospitalWorkflow,
 } from "./hospitalWorkflowService";
+import { translateText } from "./translationService";
 import {
   recognizeNavigationIntent,
   type NavigationIntent,
@@ -11,6 +13,7 @@ import {
 export type RequirementPlan = {
   departmentIds: number[];
   clarification: string | null;
+  response?: string;
   rationale: string;
   workflowNote: string;
   intent: "navigation" | "service-request" | "multi-stop" | "unknown";
@@ -31,6 +34,7 @@ export type StructuredRequirement = {
 export type RequirementAnalysis = {
   plan: RequirementPlan;
   source: "ai-backend" | "rule-based";
+  detectedInputLanguage?: RequirementLanguage;
   backendMessage?: string;
 };
 
@@ -67,55 +71,32 @@ export type PatientRequirementOptions = {
   fetcher?: typeof fetch;
   workflows?: HospitalWorkflow[];
 };
-type RequirementLanguage = "en" | "kn";
+type RequirementLanguage = "en" | "kn" | "hi" | "ml";
 
-const departmentAliases: Record<string, string[]> = {
-  "General Medicine": [
-    "general medicine", "general physician", "doctor", "physician", "consult",
-    "consultation", "medical consultation", "ವೈದ್ಯರು", "ವೈದ್ಯರನ್ನು", "ಡಾಕ್ಟರ್",
-    "ಸಾಮಾನ್ಯ ವೈದ್ಯಕೀಯ", "ವೈದ್ಯರನ್ನು ಭೇಟಿ",
-  ],
-  Laboratory: [
-    "laboratory", "lab", "blood test", "blood work", "test sample", "blood check",
-    "ರಕ್ತ ಪರೀಕ್ಷೆ", "ರಕ್ತ ತಪಾಸಣೆ", "ಪ್ರಯೋಗಾಲಯ", "ಲ್ಯಾಬ್", "ರಕ್ತ ಪರೀಕ್ಷೆ ಮಾಡಿಸಬೇಕು",
-  ],
-  Radiology: [
-    "radiology", "x-ray", "xray", "imaging", "scan", "ಮೆಡಿಕಲ್ ಸ್ಕ್ಯಾನ್",
-    "ಎಕ್ಸ್ ರೇ", "ಎಕ್ಸ್-ರೇ", "ಸ್ಕ್ಯಾನ್",     "ರೇಡಿಯಾಲಜಿ", "ವಿಕಿರಣಶಾಸ್ತ್ರ ವಿಭಾಗ",
-  ],
-  Cardiology: [
-    "cardiology", "heart doctor", "heart specialist", "cardiologist",
-    "ಹೃದಯ", "ಹೃದಯ ತಜ್ಞ", "ಹೃದಯ ವೈದ್ಯ", "ಕಾರ್ಡಿಯಾಲಜಿ", "ಹೃದ್ರೋಗ ವಿಭಾಗ",
-  ],
-  Neurology: [
-    "neurology", "neurologist", "brain specialist", "ನರವಿಜ್ಞಾನ", "ನರರೋಗ",
-    "ನರವೈದ್ಯ", "ನ್ಯೂರಾಲಜಿ", "ನರರೋಗ ವಿಭಾಗ",
-  ],
-  Emergency: [
-    "emergency", "urgent care", "emergency room", "ತುರ್ತು", "ತುರ್ತು ವಿಭಾಗ",
-    "ತುರ್ತು ಚಿಕಿತ್ಸೆ", "ತುರ್ತು ಚಿಕಿತ್ಸಾ ವಿಭಾಗ",
-  ],
-  Pharmacy: [
-    "pharmacy", "medicine pickup", "prescription", "medicine", "medication",
-    "drug store", "ಔಷಧಿ", "ಔಷಧಾಲಯ", "ಔಷಧಿ ಪಡೆಯಬೇಕು",
-  ],
-  "Billing Counter": [
-    "billing counter", "billing", "bill payment", "pay bill", "payment counter",
-    "ಬಿಲ್ಲಿಂಗ್", "ಬಿಲ್ಲಿಂಗ್ ವಿಭಾಗ", "ಬಿಲ್ ಪಾವತಿ", "ಹಣ ಪಾವತಿ", "ಬಿಲ್ ಕಟ್ಟಬೇಕು",
-  ],
-  Orthopaedics: [
-    "orthopaedics", "orthopedics", "bone doctor", "bone specialist", "joint doctor",
-    "ಮೂಳೆ", "ಮೂಳೆ ವೈದ್ಯ", "ಆರ್ಥೋಪೆಡಿಕ್ಸ್",
-  ],
-  Cafeteria: [
-    "cafeteria", "food", "cafe", "canteen", "eat", "ಊಟ", "ಆಹಾರ", "ಕ್ಯಾಂಟೀನ್",
-  ],
-};
+export function detectInputLanguage(input: string): RequirementLanguage {
+  const text = input.normalize("NFKC");
+  if (/[\u0c80-\u0cff]/u.test(text)) return "kn";
+  if (/[\u0d00-\u0d7f]/u.test(text)) return "ml";
+  if (/[\u0900-\u097f]/u.test(text)) return "hi";
+  return "en";
+}
+
+function languageName(language: RequirementLanguage) {
+  return language === "kn"
+    ? "Kannada"
+    : language === "hi"
+      ? "Hindi"
+      : language === "ml"
+        ? "Malayalam"
+        : "English";
+}
 
 const stopWords = new Set([
   "i", "need", "want", "would", "like", "to", "the", "a", "an", "and", "then",
   "please", "take", "me", "find", "where", "is", "can", "get", "for", "my",
   "ನನಗೆ", "ಬೇಕು", "ಮತ್ತು", "ನಂತರ", "ದಯವಿಟ್ಟು", "ಗೆ", "ಒಂದು",
+  "मुझे", "चाहिए", "और", "फिर", "कृपया", "एक",
+  "എനിക്ക്", "വേണം", "ഒപ്പം", "പിന്നെ", "ദയവായി", "ഒരു",
 ]);
 
 type MatchCandidate = {
@@ -128,7 +109,9 @@ const normalizeText = (value: string) =>
   value
     .normalize("NFKC")
     .toLocaleLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, " ")
+    .replace(/[\u200c\u200d]/gu, "")
+    .replace(/[^\p{L}\p{N}\p{M}\s-]/gu, " ")
+    .replace(/\bx\s*-\s*ray\b|\bx\s+ray\b|\bxray\b/giu, "xray")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -136,11 +119,13 @@ function splitRequirements(input: string) {
   return input
     .normalize("NFKC")
     .toLocaleLowerCase()
+    .replace(/യും(?=\s)/gu, " and ")
     .split(/[.!?;,\n]+/u)
     .flatMap((sentence) =>
-      sentence.split(/\s+(?:and then|then|and|also|ಮತ್ತು|ನಂತರ)\s+/u),
+      sentence.split(/\s+(?:and then|then|and|also|ಮತ್ತು|ನಂತರ|और|फिर|साथ ही|ഒപ്പം|പിന്നെ|കൂടാതെ|യും)\s+/u),
     )
     .map(normalizeText)
+    .filter((part) => !/^(ചെയ്യണം|വേണം|ആവശ്യമാണ്)$/u.test(part))
     .filter(Boolean);
 }
 
@@ -176,10 +161,14 @@ function aliasMatch(
         "u",
       ).test(text);
   if (phraseMatch) {
-    const genericAlias = ["doctor", "consult", "consultation", "ವೈದ್ಯರು"].includes(
+    const genericAlias = ["doctor", "physician", "lab", "imaging"].includes(
       normalizedAlias,
     );
-    return genericAlias ? 0.8 : 0.98;
+    return genericAlias
+      ? 0.82
+      : normalizedAlias.split(" ").length > 1
+        ? 0.96
+        : 0.93;
   }
   const textTokens = text
     .split(" ")
@@ -211,9 +200,20 @@ function aliasMatch(
 function getCandidates(text: string, departments: HospitalDepartment[]) {
   const candidates: MatchCandidate[] = [];
   for (const department of departments) {
+    const serviceAliases = hospitalServiceAliases[department.name];
     const aliases = [
       department.name,
-      ...(departmentAliases[department.name] ?? []),
+      ...(serviceAliases
+        ? [
+            serviceAliases.officialName,
+            ...serviceAliases.commonServices,
+            ...serviceAliases.englishSynonyms,
+            ...serviceAliases.kannadaSynonyms,
+            ...(serviceAliases.hindiSynonyms ?? []),
+            ...(serviceAliases.malayalamSynonyms ?? []),
+            ...serviceAliases.spellingVariations,
+          ]
+        : []),
     ];
     let best: MatchCandidate | null = null;
     for (const alias of aliases) {
@@ -253,11 +253,34 @@ function getAnalysisIntent(
 function clarifyUnresolvedRequirements(
   requirements: StructuredRequirement[],
   departments: HospitalDepartment[],
+  language: RequirementLanguage,
 ) {
   const ambiguous = requirements.filter((item) => item.status === "ambiguous");
   const unmatched = requirements.filter((item) => item.status === "unmatched");
   const messages: string[] = [];
   if (ambiguous.length > 0) {
+    const singleCandidateClarification = ambiguous.find(
+      (item) =>
+        item.candidateDepartmentIds.length === 1 &&
+        item.matchedTerms.includes("heart check"),
+    );
+    if (singleCandidateClarification) {
+      const department = departments.find(
+        (item) => item.id === singleCandidateClarification.candidateDepartmentIds[0],
+      );
+      if (department) {
+        const departmentName = translateText(department.name, language);
+        messages.push(
+          language === "kn"
+            ? `ನೀವು ${departmentName} ವಿಭಾಗವನ್ನು ಹುಡುಕುತ್ತಿದ್ದೀರಾ?`
+            : language === "hi"
+              ? `क्या आप ${departmentName} विभाग की तलाश कर रहे हैं?`
+              : language === "ml"
+                ? `നിങ്ങൾ ${departmentName} വിഭാഗമാണോ അന്വേഷിക്കുന്നത്?`
+                : `Are you looking for the ${departmentName} department?`,
+        );
+      }
+    }
     const candidates = [...new Set(
       ambiguous.flatMap((item) =>
         item.candidateDepartmentIds
@@ -265,16 +288,61 @@ function clarifyUnresolvedRequirements(
           .filter((name): name is string => Boolean(name)),
       ),
     )];
-    messages.push(
-      `Which configured destination did you mean${candidates.length ? `: ${candidates.join(", ")}` : ""}?`,
-    );
+    if (!singleCandidateClarification) {
+      const translatedCandidates = candidates
+        .map((name) => translateText(name, language))
+        .join(", ");
+      messages.push(
+        language === "kn"
+          ? `ನೀವು ಯಾವ ಸಂರಚಿಸಿದ ಗಮ್ಯಸ್ಥಾನವನ್ನು ಉದ್ದೇಶಿಸಿದ್ದೀರಿ${translatedCandidates ? `: ${translatedCandidates}` : ""}?`
+          : language === "hi"
+            ? `आपका मतलब किस कॉन्फ़िगर किए गए गंतव्य से है${translatedCandidates ? `: ${translatedCandidates}` : ""}?`
+            : language === "ml"
+              ? `ഏത് ക്രമീകരിച്ച ലക്ഷ്യസ്ഥാനമാണ് നിങ്ങൾ ഉദ്ദേശിച്ചത്${translatedCandidates ? `: ${translatedCandidates}` : ""}?`
+              : `Which configured destination did you mean${translatedCandidates ? `: ${translatedCandidates}` : ""}?`,
+      );
+    }
   }
+
   if (unmatched.length > 0) {
+    const requestedText = unmatched
+      .map((item) => item.requestedText)
+      .join("; ");
     messages.push(
-      `I could not match “${unmatched.map((item) => item.requestedText).join("; ")}” to a configured department or facility. Please clarify the service or ask hospital staff.`,
+      language === "kn"
+        ? `“${requestedText}” ಎಂಬ ವಿನಂತಿಯನ್ನು ಸಂರಚಿಸಿದ ವಿಭಾಗ ಅಥವಾ ಸೌಲಭ್ಯಕ್ಕೆ ಹೊಂದಿಸಲಾಗಲಿಲ್ಲ. ದಯವಿಟ್ಟು ಸೇವೆಯನ್ನು ಮತ್ತೊಮ್ಮೆ ವಿವರಿಸಿ ಅಥವಾ ಆಸ್ಪತ್ರೆಯ ಸಿಬ್ಬಂದಿಯನ್ನು ಕೇಳಿ.`
+        : language === "hi"
+          ? `“${requestedText}” को किसी कॉन्फ़िगर किए गए विभाग या सुविधा से नहीं मिलाया जा सका। कृपया सेवा दोबारा स्पष्ट करें या अस्पताल के कर्मचारियों से पूछें।`
+          : language === "ml"
+            ? `“${requestedText}” ക്രമീകരിച്ച വിഭാഗമോ സൗകര്യമോ ആയി കണ്ടെത്താനായില്ല. സേവനം വീണ്ടും വ്യക്തമായി പറയുക അല്ലെങ്കിൽ ആശുപത്രി ജീവനക്കാരോട് ചോദിക്കുക.`
+            : `I could not match “${requestedText}” to a configured department or facility. Please rephrase the service or ask hospital staff.`,
     );
   }
   return messages.length > 0 ? messages.join(" ") : null;
+}
+
+function createAssistantResponse(
+  requirements: StructuredRequirement[],
+  language: RequirementLanguage,
+) {
+  const names = [
+    ...new Set(
+      requirements
+        .filter(
+          (requirement) =>
+            requirement.status === "matched" && requirement.departmentName,
+        )
+        .map((requirement) => translateText(requirement.departmentName!, language)),
+    ),
+  ];
+  if (names.length === 0) return null;
+  const destinations = names.length === 1
+    ? names[0]
+    : `${names.slice(0, -1).join(", ")}${language === "en" ? " and " : language === "kn" ? " ಮತ್ತು " : language === "hi" ? " और " : " ഒപ്പം "}${names.at(-1)}`;
+  if (language === "kn") return `${destinations} ಕಂಡುಹಿಡಿದಿದ್ದೇನೆ. ನಿಮಗೆ ಮಾರ್ಗದರ್ಶನ ಬೇಕೇ?`;
+  if (language === "hi") return `${destinations} मिल गया है। क्या आपको वहाँ जाने का रास्ता चाहिए?`;
+  if (language === "ml") return `${destinations} കണ്ടെത്തി. അവിടേക്കുള്ള വഴി കാണിക്കട്ടേ?`;
+  return `I found ${destinations}. Would you like directions?`;
 }
 
 function matchRequirements(
@@ -286,9 +354,29 @@ function matchRequirements(
     const asksForAnySpecialist =
       /\b(specialist|specialty|speciality)\b/u.test(part) ||
       part.includes("ತಜ್ಞ");
+    const asksForHeartCheck =
+      /\b(heart|cardiac|chest)\b[\w\s-]*(?:check|test|screening|consultation)\b/u.test(part) ||
+      (/(ಹೃದಯ|ಹೃದ್ರೋಗ)/u.test(part) && /ಪರೀಕ್ಷೆ|ತಪಾಸಣೆ|ಚೆಕ್/u.test(part)) ||
+      (/(दिल|हृदय)/u.test(part) && /जांच|परीक्षण|चेक/u.test(part)) ||
+      (/(ഹൃദയ|ഹൃദ്രോഗ)/u.test(part) && /പരിശോധന|ടെസ്റ്റ്|ചെക്ക്/u.test(part));
     const candidates = getCandidates(part, departments);
     const best = candidates[0];
     const hasSpecificMatch = Boolean(best && best.confidence >= 0.78);
+    if (asksForHeartCheck && !hasSpecificMatch) {
+      const cardiology = departments.find((department) => department.name === "Cardiology");
+      if (cardiology) {
+        return {
+          requestedText: part,
+          departmentId: null,
+          departmentName: null,
+          intent: "unknown",
+          confidence: 0.8,
+          matchedTerms: ["heart check"],
+          status: "ambiguous",
+          candidateDepartmentIds: [cardiology.id],
+        };
+      }
+    }
     const asksForUnspecifiedTest =
       (/\b(test|diagnostic test)\b/u.test(part) || part.includes("ಪರೀಕ್ಷೆ")) &&
       !/(blood test|blood work|ರಕ್ತ ಪರೀಕ್ಷೆ|ರಕ್ತ ತಪಾಸಣೆ)/u.test(part);
@@ -385,7 +473,7 @@ export function createPatientRequirementService({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         requirement: input,
-        responseLanguage: language === "kn" ? "Kannada" : "English",
+        responseLanguage: languageName(language),
         departments: departments.map(({ id, name, building, floor, room, category }) => ({
           id,
           name,
@@ -395,7 +483,7 @@ export function createPatientRequirementService({
           category,
         })),
         instruction:
-          `Understand English or Kannada text, synonyms, and multiple requests. Write all patient-facing text fields (clarification, rationale, and requirement labels) in ${language === "kn" ? "Kannada" : "English"}. Match only the supplied configured hospital department/facility catalog. Never invent services, departments, workflow prerequisites, or destinations; do not diagnose. Return JSON with intent, requirements [{requestedText, departmentId, confidence, matchedTerms, status}], departmentIds, clarification, and rationale. Every departmentId must be from the supplied catalog. Confidence is a 0..1 language-match score, not a medical confidence.`,
+          `Understand English, Kannada, Hindi, or Malayalam text, synonyms, and multiple requests. Write all patient-facing text fields (clarification, rationale, and requirement labels) in ${languageName(language)}. Match only the supplied configured hospital department/facility catalog. Never invent services, departments, workflow prerequisites, or destinations; do not diagnose. Return JSON with intent, requirements [{requestedText, departmentId, confidence, matchedTerms, status}], departmentIds, clarification, and rationale. Every departmentId must be from the supplied catalog. Confidence is a 0..1 language-match score, not a medical confidence.`,
       }),
     });
     if (!response.ok) {
@@ -417,9 +505,10 @@ export function createPatientRequirementService({
     const recognized = matchRequirements(input, departments);
     const requirements = recognized.filter(
       (requirement) =>
-        requirement.status === "matched" &&
-        requirement.departmentId !== null &&
-        orderedIds.includes(requirement.departmentId),
+        requirement.status !== "workflow-prerequisite" &&
+        (requirement.status !== "matched" ||
+          (requirement.departmentId !== null &&
+    orderedIds.includes(requirement.departmentId))),
     );
     const recognizedIds = new Set(
       requirements.map((requirement) => requirement.departmentId),
@@ -471,14 +560,18 @@ export function createPatientRequirementService({
             ? "The AI suggestion did not match a configured hospital department. Please try a department name or ask hospital staff."
             : typeof body.clarification === "string"
               ? body.clarification
-              : clarifyUnresolvedRequirements(recognized, departments),
+              : clarifyUnresolvedRequirements(recognized, departments, language),
         rationale:
           typeof body.rationale === "string"
             ? body.rationale
-            : "Suggested from the configured hospital department list.",
+            : translateText(
+                "Natural-language matches use configured department names and service aliases only. Confidence is a matching score, not a clinical assessment.",
+                language,
+              ),
         workflowNote: workflowApplied
           ? "Configured hospital workflow prerequisites were applied to this visit sequence."
           : "No configured hospital workflow prerequisites were applied.",
+        response: createAssistantResponse(requirements, language) ?? undefined,
       },
       source: "ai-backend",
     };
@@ -499,19 +592,25 @@ export function createPatientRequirementService({
         departments: HospitalDepartment[],
         language: RequirementLanguage = "en",
       ): Promise<RequirementAnalysis> {
-        if (!endpoint) {
+          const detectedInputLanguage = detectInputLanguage(input);
+          if (!endpoint) {
+            return {
+              ...(await analyzeWithRules(input, departments, workflows, language)),
+              source: "rule-based",
+              detectedInputLanguage,
+            };
+          }
+          try {
           return {
-            ...(await analyzeWithRules(input, departments, workflows)),
-            source: "rule-based",
-          };
-        }
-        try {
-          return await analyzeWithBackend(input, departments, language);
-        } catch (error) {
-          return {
-            ...(await analyzeWithRules(input, departments, workflows)),
-            source: "rule-based",
-            backendMessage:
+              ...(await analyzeWithBackend(input, departments, language)),
+              detectedInputLanguage,
+            };
+          } catch (error) {
+            return {
+              ...(await analyzeWithRules(input, departments, workflows, language)),
+              source: "rule-based",
+              detectedInputLanguage,
+              backendMessage:
               error instanceof Error ? error.message : "AI service unavailable.",
           };
         }
@@ -524,14 +623,18 @@ async function analyzeWithRules(
   input: string,
   departments: HospitalDepartment[],
   workflows?: HospitalWorkflow[],
+  language: RequirementLanguage = "en",
 ): Promise<Omit<RequirementAnalysis, "source">> {
   const text = input.trim();
   if (!text) {
     return {
       plan: {
         departmentIds: [],
-        clarification: "Describe the hospital services you need.",
-        rationale: "No requirement was provided.",
+        clarification: translateText(
+          "Describe the configured hospital service you need. If you are unsure, choose from the listed departments.",
+          language,
+        ),
+        rationale: translateText("No requirement was provided.", language),
         workflowNote: "No configured hospital workflow prerequisites were applied.",
         intent: "unknown",
         requirements: [],
@@ -583,11 +686,14 @@ async function analyzeWithRules(
   }
 
   const clarificationParts = [
-    clarifyUnresolvedRequirements(requirements, departments),
+    clarifyUnresolvedRequirements(requirements, departments, language),
   ].filter((message): message is string => message !== null);
   if (asksForConsultation && !mentionsSpecialty && generalMedicine) {
     clarificationParts.push(
-      "I matched a general consultation to General Medicine. Did you mean a specific configured specialty?",
+      translateText(
+        "I matched a general consultation to General Medicine. Did you mean a specific configured specialty?",
+        language,
+      ),
     );
   }
 
@@ -637,10 +743,14 @@ async function analyzeWithRules(
       intent: getAnalysisIntent(text, structuredRequirements),
       requirements: structuredRequirements,
       rationale:
-        "Natural-language matches use configured department names and service aliases only. Confidence is a matching score, not a clinical assessment.",
+        translateText(
+          "Natural-language matches use configured department names and service aliases only. Confidence is a matching score, not a clinical assessment.",
+          language,
+        ),
       workflowNote: workflowApplied
         ? "Configured hospital workflow prerequisites were applied to this visit sequence."
         : "No configured hospital workflow prerequisites were applied.",
+      response: createAssistantResponse(structuredRequirements, language) ?? undefined,
     },
   };
 }

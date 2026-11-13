@@ -6,6 +6,7 @@ import {
 import { patientRequirementService } from "./patientRequirementService";
 import { getWorkflowPlan } from "./hospitalWorkflowService";
 import { hospitalRouteGraph, type HospitalRouteGraph } from "../data/hospitalRouteGraphData";
+import type { Language } from "./translationService";
 
 export type NavigationOrigin = {
   buildingId: string;
@@ -13,7 +14,7 @@ export type NavigationOrigin = {
   nodeId?: string;
   accessibleOnly?: boolean;
 };
-export type AssistantLanguage = "en" | "kn";
+export type AssistantLanguage = Language;
 
 export function planNavigationStops(
   departmentIds: number[],

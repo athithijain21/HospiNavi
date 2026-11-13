@@ -45,7 +45,10 @@ export function matchIndoorPositionToRouteNode(
   if (
     !estimate ||
     (estimate.source !== "ble" && estimate.source !== "wifi") ||
+    !Number.isFinite(estimate.timestamp) ||
+    now < estimate.timestamp ||
     now - estimate.timestamp > 15_000 ||
+    !Number.isFinite(estimate.confidence) ||
     estimate.confidence < confidenceThreshold ||
     !estimate.nearestBeaconId
   ) {
@@ -78,6 +81,8 @@ export function matchGPSPositionToRouteNode(
 ): MatchedRoutePosition | null {
   if (
     !fix ||
+    !Number.isFinite(fix.timestamp) ||
+    now < fix.timestamp ||
     now - fix.timestamp > 60_000 ||
     !Number.isFinite(fix.accuracy) ||
     fix.accuracy <= 0 ||

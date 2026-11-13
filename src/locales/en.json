@@ -64,6 +64,7 @@
   "WHAT SERVICES DO YOU NEED?": "WHAT SERVICES DO YOU NEED?",
   "VOICE LANGUAGE": "VOICE LANGUAGE",
   "Voice availability depends on your browser. Typed English and Kannada requests are matched against the configured hospital directory.": "Voice availability depends on your browser. Typed English and Kannada requests are matched against the configured hospital directory.",
+  "Voice availability depends on your browser. Typed requests in English, Kannada, Hindi, or Malayalam are matched against the configured hospital directory.": "Voice availability depends on your browser. Typed requests in English, Kannada, Hindi, or Malayalam are matched against the configured hospital directory.",
   "For example: I need a general consultation and a blood test.": "For example: I need a general consultation and a blood test.",
   "Understanding…": "Understanding…",
   "Understand requirement": "Understand requirement",
@@ -124,6 +125,19 @@
   "Room": "Room",
   "Current Floor": "Current Floor",
   "Language": "Language",
+  "AI Assistant": "AI Assistant",
+  "AI Assistant ON": "ON",
+  "AI Assistant OFF": "OFF",
+  "AI Assistant Enabled": "AI Assistant Enabled",
+  "AI Assistant Disabled": "AI Assistant Disabled",
+  "Smart patient requirement assistance is available.": "Smart patient requirement assistance is available.",
+  "You can manually select hospital departments and facilities.": "You can manually select hospital departments and facilities.",
+  "AI backend is configured.": "AI backend is configured.",
+  "AI backend unavailable; using rule-based matching.": "AI backend unavailable; using rule-based matching.",
+  "AI Assistant is disabled. Please select a configured destination manually.": "AI Assistant is disabled. Please select a configured destination manually.",
+  "SELECT DESTINATIONS MANUALLY": "SELECT DESTINATIONS MANUALLY",
+  "AI processing is off. Use the configured destination selector below.": "AI processing is off. Use the configured destination selector below.",
+  "Selected destinations": "Selected destinations",
   "Indoor Positioning": "Indoor Positioning",
   "Not positioning": "Not positioning",
   "Scanning for BLE beacons": "Scanning for BLE beacons",
@@ -218,6 +232,8 @@
   "AI service unavailable; used the local rule-based fallback": "AI service unavailable; used the local rule-based fallback",
   "match confidence": "match confidence",
   "matched": "matched",
+  "Choose from these configured destinations": "Choose from these configured destinations",
+  "Describe the configured hospital service you need. If you are unsure, choose from the listed departments.": "Describe the configured hospital service you need. If you are unsure, choose from the listed departments.",
   "Demo route available · simulated": "Demo route available · simulated",
   "Route available · surveyed configuration": "Route available · surveyed configuration",
   "Demo visit sequence · simulated route ordering": "Demo visit sequence · simulated route ordering",
@@ -235,6 +251,15 @@
   "Latitude:": "Latitude:",
   "Longitude:": "Longitude:",
   "GPS accuracy:": "GPS accuracy:",
+  "Detected Location": "Detected Location",
+  "Looking up approximate location name…": "Looking up approximate location name…",
+  "Approximate location name": "Approximate location name",
+  "Readable location unavailable.": "Readable location unavailable.",
+  "GPS accuracy is too poor for a precise location name.": "GPS accuracy is too poor for a precise location name.",
+  "More Details": "More Details",
+  "Road:": "Road:",
+  "District:": "District:",
+  "© OpenStreetMap contributors": "© OpenStreetMap contributors",
   "Waiting for a GPS fix": "Waiting for a GPS fix",
   "GPS provides outdoor coordinates only; it cannot identify your indoor building or floor.": "GPS provides outdoor coordinates only; it cannot identify your indoor building or floor.",
   "Retry GPS detection": "Retry GPS detection",
@@ -361,12 +386,21 @@
   "No speech was detected. Please try again.": "No speech was detected. Please try again.",
   "No microphone was found. Connect a microphone or use text input.": "No microphone was found. Connect a microphone or use text input.",
   "Speech recognition network service is unavailable. Use text input.": "Speech recognition network service is unavailable. Use text input.",
+  "The browser speech service is unavailable. Check your internet connection or use text input.": "The browser speech service is unavailable. Check your internet connection or use text input.",
+  "Retry voice recognition": "Retry voice recognition",
+  "Use server speech recognition": "Use server speech recognition",
+  "Server speech recognition failed. Use text input.": "Server speech recognition failed. Use text input.",
+  "Selected language is not supported by this browser. Use text input.": "Selected language is not supported by this browser. Use text input.",
   "Speech recognition failed. You can use text input instead.": "Speech recognition failed. You can use text input instead.",
   "No active route directions to repeat.": "No active route directions to repeat.",
   "Navigation stopped.": "Navigation stopped.",
   "The route starts at the destination node, but physical arrival is not confirmed by indoor positioning.": "The route starts at the destination node, but physical arrival is not confirmed by indoor positioning.",
   "Current Location": "Current Location",
   "Estimated Distance": "Estimated Distance",
+  "Estimated Walking Time": "Estimated Walking Time",
+  "minutes": "minutes",
+  "Illustrative estimate at 0.8 m/s; actual time varies.": "Illustrative estimate at 0.8 m/s; actual time varies.",
+  "Navigation paused. Resume when you are ready.": "Navigation paused. Resume when you are ready.",
   "Pause navigation": "Pause navigation",
   "Resume navigation": "Resume navigation",
   "Stop navigation": "Stop navigation",
@@ -413,7 +447,7 @@
   "Department records are the local configured directory, not a live hospital database feed or independently verified hospital catalog.": "Department records are the local configured directory, not a live hospital database feed or independently verified hospital catalog.",
   "HospiNav provides navigation only. It does not diagnose symptoms or determine which medical services are clinically appropriate.": "HospiNav provides navigation only. It does not diagnose symptoms or determine which medical services are clinically appropriate.",
   "Suggested visit sequence": "Suggested visit sequence",
-  "Speech output is not supported by this browser.":   "Speech output is not supported by this browser.",
+  "Speech output is not supported by this browser.": "Speech output is not supported by this browser.",
   "The sample graph, start point, distances, and transitions are simulated examples, not surveyed hospital routes.": "The sample graph, start point, distances, and transitions are simulated examples, not surveyed hospital routes.",
   "Stop Journey": "Stop Journey",
   "Speak directions": "Speak directions",
@@ -423,5 +457,76 @@
   "Confirm a precise starting point. Building and floor selection alone does not establish a route origin.": "Confirm a precise starting point. Building and floor selection alone does not establish a route origin.",
   "No surveyed indoor route connections are configured. Add verified corridors and transitions before starting a journey.": "No surveyed indoor route connections are configured. Add verified corridors and transitions before starting a journey.",
   "Hospital overview": "Hospital overview",
-  "Wi-Fi:": "Wi-Fi:"
+  "Wi-Fi:": "Wi-Fi:",
+  "Selected language voice unavailable; directions are available as text.": "Selected language voice unavailable; directions are available as text.",
+  "Father Muller Medical College Hospital": "Father Muller Medical College Hospital",
+  "Kankanady, Mangaluru, Karnataka, India": "Kankanady, Mangaluru, Karnataka, India",
+  "Navigate from your current GPS location to Father Muller Medical College Hospital using OpenStreetMap road data.": "Navigate from your current GPS location to Father Muller Medical College Hospital using OpenStreetMap road data.",
+  "SELECT HOSPITAL BUILDING": "SELECT HOSPITAL BUILDING",
+  "Find My Location": "Find My Location",
+  "Navigate to Hospital": "Navigate to Hospital",
+  "Recenter Map": "Recenter Map",
+  "Stop Navigation": "Stop Navigation",
+  "Open in Google Maps": "Open in Google Maps",
+  "Next direction": "Next direction",
+  "Estimated travel": "Estimated travel",
+  "Calculating driving route…": "Calculating driving route…",
+  "Estimated driving time": "Estimated driving time",
+  "Preparing the driving route…": "Preparing the driving route…",
+  "Routing details": "Routing details",
+  "Starting latitude": "Starting latitude",
+  "Starting longitude": "Starting longitude",
+  "Destination latitude": "Destination latitude",
+  "Destination longitude": "Destination longitude",
+  "Routing API": "Routing API",
+  "Road distance": "Road distance",
+  "Estimated duration": "Estimated duration",
+  "Routing error": "Routing error",
+  "None": "None",
+  "Start on": "Start on",
+  "Start by heading": "Start by heading",
+  "Start driving toward the hospital": "Start driving toward the hospital",
+  "Arrive at Father Muller Medical College Hospital": "Arrive at Father Muller Medical College Hospital",
+  "Turn": "Turn",
+  "Continue": "Continue",
+  "Enter the roundabout": "Enter the roundabout",
+  "onto": "onto",
+  "Find your location to plan a road route to the hospital.": "Find your location to plan a road route to the hospital.",
+  "Map controls": "Map controls",
+  "Zoom in": "Zoom in",
+  "Zoom out": "Zoom out"
+  ,"Outdoor route service is unavailable. Please try again or open Google Maps.": "Outdoor route service is unavailable. Please try again or open Google Maps."
+  ,"No road route is available from your current location to the hospital.": "No road route is available from your current location to the hospital."
+  ,"Unable to calculate an outdoor road route. Please try again.": "Unable to calculate an outdoor road route. Please try again."
+  ,"OpenStreetMap map tiles are unavailable. Check your internet connection and try again.": "OpenStreetMap map tiles are unavailable. Check your internet connection and try again."
+  ,"How HospiNav works": "How HospiNav works"
+  ,"Follow three simple steps to reach the right place.": "Follow three simple steps to reach the right place."
+  ,"Choose where you want to go": "Choose where you want to go"
+  ,"Search a department or facility.": "Search a department or facility."
+  ,"Find your location": "Find your location"
+  ,"Use GPS outside or choose your building and floor inside.": "Use GPS outside or choose your building and floor inside."
+  ,"Follow the directions": "Follow the directions"
+  ,"Use the map and simple directions to reach your destination.": "Use the map and simple directions to reach your destination."
+  ,"Building to visit after arrival": "Building to visit after arrival"
+  ,"First follow the road route to the hospital. Then choose the building for indoor directions.": "First follow the road route to the hospital. Then choose the building for indoor directions."
+  ,"Back to dashboard": "Back to dashboard"
+  ,"Start over": "Start over"
+  ,"New to HospiNav?": "New to HospiNav?"
+  ,"Start with a department, use GPS when you are outside, and follow the route one step at a time.": "Start with a department, use GPS when you are outside, and follow the route one step at a time."
+  ,"Get started": "Get started"
+  ,"Hide guide": "Hide guide"
+  ,"Show welcome guide": "Show welcome guide"
+  ,"Patient help shortcuts": "Patient help shortcuts"
+  ,"Choose a common service to start directions quickly.": "Choose a common service to start directions quickly."
+  ,"Find emergency": "Find emergency"
+  ,"Find pharmacy": "Find pharmacy"
+  ,"Find laboratory": "Find laboratory"
+  ,"Find help desk": "Find help desk"
+  ,"AI backend response received. Suggestions are limited to the configured hospital directory.": "AI backend response received. Suggestions are limited to the configured hospital directory."
+  ,"AI service is unavailable, so multilingual rule-based matching is being used. You can always select destinations manually.": "AI service is unavailable, so multilingual rule-based matching is being used. You can always select destinations manually."
+  ,"AI Assistant is off. Manual destination selection is active; your text will not be sent for AI processing.": "AI Assistant is off. Manual destination selection is active; your text will not be sent for AI processing."
+  ,"You are offline": "You are offline"
+  ,"Hospital directory and saved translations remain available. GPS, live maps, and road routes may need an internet connection.": "Hospital directory and saved translations remain available. GPS, live maps, and road routes may need an internet connection."
+  ,"Retry road route": "Retry road route"
+  ,"Retry map": "Retry map"
 }

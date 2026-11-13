@@ -7,6 +7,8 @@ import {
 export type LanguageContextValue = {
   language: Language;
   setLanguage: (language: Language) => void;
+  aiAssistantEnabled: boolean;
+  setAiAssistantEnabled: (enabled: boolean) => void;
   t: typeof translateText;
 };
 

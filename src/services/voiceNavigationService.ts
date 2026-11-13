@@ -44,9 +44,24 @@ export const voiceNavigationService = {
       throw new Error("Speech output is not supported by this browser.");
     }
     const speech: SpeechSynthesisWithVoices = window.speechSynthesis;
+    const requestedLanguage = language.toLowerCase();
+    const voice = speech
+      .getVoices()
+      .find((candidate) => candidate.lang.toLowerCase() === requestedLanguage) ??
+      speech
+        .getVoices()
+        .find((candidate) =>
+          candidate.lang.toLowerCase().startsWith(requestedLanguage.split("-")[0]),
+        );
+    if (!voice) {
+      throw new Error(
+        "Selected language voice unavailable; directions are available as text.",
+      );
+    }
     speech.cancel();
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = language;
+    utterance.voice = voice;
     speech.speak(utterance);
     return utterance;
   },

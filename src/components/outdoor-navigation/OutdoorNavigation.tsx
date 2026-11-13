@@ -16,6 +16,7 @@ import {
   hospitalBuildingCoordinates,
   maximumUsableGPSAccuracyMetres,
   type OutdoorCoordinate,
+  hospitalDestination,
 } from "../../data/hospitalOutdoorData";
 import {
   useGeolocationTracking,
@@ -45,6 +46,20 @@ type RouteData = {
   coordinates: [number, number][];
   distance: number;
   duration: number;
+  steps: RouteStep[];
+  origin: OutdoorCoordinate;
+  destination: OutdoorCoordinate;
+};
+
+type RouteStep = {
+  name?: string;
+  distance: number;
+  duration: number;
+  maneuver?: {
+    instruction?: string;
+    type?: string;
+    modifier?: string;
+  };
 };
 
 type RouteResult = {
@@ -60,8 +75,11 @@ type RouteResponse = {
     geometry?: { coordinates: [number, number][] };
     distance: number;
     duration: number;
+    legs?: { steps?: RouteStep[] }[];
   }[];
 };
+
+const routingProvider = "OSRM · router.project-osrm.org · driving";
 
 const noRouteCoordinates: [number, number][] = [];
 
@@ -79,11 +97,11 @@ const currentLocationIcon = divIcon({
   iconAnchor: [12, 12],
 });
 
-const campusReferenceIcon = divIcon({
-  className: "outdoor-campus-reference-icon",
+const hospitalDestinationIcon = divIcon({
+  className: "outdoor-hospital-icon",
   html: '<span aria-hidden="true">H</span>',
-  iconSize: [30, 30],
-  iconAnchor: [15, 15],
+  iconSize: [34, 34],
+  iconAnchor: [17, 17],
 });
 
 function distanceBetween(a: OutdoorCoordinate, b: OutdoorCoordinate) {
@@ -133,10 +151,12 @@ function MapViewport({
   position,
   buildingCoordinates,
   routeCoordinates,
+  recenterRequest,
 }: {
   position: GPSPosition | null;
   buildingCoordinates: OutdoorCoordinate[];
   routeCoordinates: [number, number][];
+  recenterRequest: number;
 }) {
   const map = useMap();
   const hasFocusedLocation = useRef(false);
@@ -165,7 +185,41 @@ function MapViewport({
     }
     previousRouteCoordinates.current = routeCoordinates;
   }, [map, routeCoordinates]);
+  useEffect(() => {
+    if (recenterRequest > 0 && position) {
+      map.setView([position.latitude, position.longitude], Math.max(map.getZoom(), 16));
+    }
+  }, [map, position, recenterRequest]);
   return null;
+}
+
+function MapActions({
+  position,
+  routeCoordinates,
+  onRecenter,
+}: {
+  position: GPSPosition | null;
+  routeCoordinates: [number, number][];
+  onRecenter: () => void;
+}) {
+  const map = useMap();
+  const { language, t } = useLanguage();
+  return (
+    <div className="outdoor-map-actions" aria-label={t("Map controls", language)}>
+      <button type="button" onClick={() => map.zoomIn()} aria-label={t("Zoom in", language)}>+</button>
+      <button type="button" onClick={() => map.zoomOut()} aria-label={t("Zoom out", language)}>−</button>
+      <button
+        type="button"
+        onClick={() => {
+          onRecenter();
+          if (position) map.setView([position.latitude, position.longitude], 16);
+          else if (routeCoordinates.length > 1) map.fitBounds(routeCoordinates, { padding: [40, 40] });
+        }}
+      >
+        {t("Recenter Map", language)}
+      </button>
+    </div>
+  );
 }
 
 function formatDistance(meters: number) {
@@ -180,6 +234,34 @@ function formatDuration(seconds: number) {
   const hours = Math.floor(minutes / 60);
   const remainingMinutes = minutes % 60;
   return remainingMinutes ? `${hours} hr ${remainingMinutes} min` : `${hours} hr`;
+}
+
+function getStepInstruction(
+  step: RouteStep,
+  translate: (key: string) => string,
+) {
+  const type = step.maneuver?.type;
+  const modifier = step.maneuver?.modifier;
+  const road = step.name;
+  if (type === "depart") {
+    return road
+      ? `${translate("Start on")} ${road}`
+      : modifier
+        ? `${translate("Start by heading")} ${modifier}`
+        : translate("Start driving toward the hospital");
+  }
+  if (type === "arrive") return translate("Arrive at Father Muller Medical College Hospital");
+  const action =
+    type === "turn"
+      ? `${translate("Turn")} ${modifier ?? ""}`.trim()
+      : type === "continue"
+        ? translate("Continue")
+        : type === "roundabout"
+          ? translate("Enter the roundabout")
+          : type
+            ? type.replaceAll("-", " ")
+            : translate("Continue");
+  return road ? `${action} ${translate("onto")} ${road}` : action;
 }
 
 export default function OutdoorNavigation({
@@ -204,12 +286,15 @@ export default function OutdoorNavigation({
     : localLocation.stopTracking;
   const geofence = sharedLocation?.geofence ?? null;
   const geofenceTransition = sharedLocation?.geofenceTransition ?? null;
-  const [startBuilding, setStartBuilding] = useState(buildings[0]?.id ?? "");
   const [destinationBuilding, setDestinationBuilding] = useState(
-    buildings[1]?.id ?? buildings[0]?.id ?? "",
+    buildings[0]?.id ?? "",
   );
+  const [navigationActive, setNavigationActive] = useState(false);
+  const [recenterRequest, setRecenterRequest] = useState(0);
+  const [tileError, setTileError] = useState(false);
+  const [routeRetryToken, setRouteRetryToken] = useState(0);
   const [routeResult, setRouteResult] = useState<RouteResult | null>(null);
-  const [now, setNow] = useState(0);
+  const [now, setNow] = useState(() => Date.now());
   const routeRequestId = useRef(0);
   const routeController = useRef<AbortController | null>(null);
   const lastRerouteAt = useRef(0);
@@ -229,10 +314,7 @@ export default function OutdoorNavigation({
       }),
     [buildings],
   );
-  const coordinateFor = (buildingId: string) =>
-    hospitalBuildingCoordinates[buildingId] ?? null;
-  const destination = coordinateFor(destinationBuilding);
-  const selectedStart = coordinateFor(startBuilding);
+  const destination = hospitalDestination.coordinate;
   const hasFreshAccuratePosition = Boolean(
     position &&
       Number.isFinite(position.accuracy) &&
@@ -242,17 +324,20 @@ export default function OutdoorNavigation({
       now - position.timestamp <= 60_000,
   );
   const hasLiveOrigin = Boolean(
-    position && isTracking && hasFreshAccuratePosition,
+    position &&
+      isTracking &&
+    now >= position.timestamp &&
+    now - position.timestamp <= 60_000,
   );
   const routeOrigin: OutdoorCoordinate | null = hasLiveOrigin && position
     ? { latitude: position.latitude, longitude: position.longitude }
-    : selectedStart;
+    : null;
   const locationMarker: GPSPosition | null = position;
-  const routeKey = `${startBuilding}:${destinationBuilding}:${hasLiveOrigin ? "gps" : "building"}`;
+  const routeKey = `${navigationActive ? "active" : "inactive"}:${hasLiveOrigin ? "gps" : "none"}`;
   const currentRouteResult = routeResult?.key === routeKey ? routeResult : null;
   const route = currentRouteResult?.route ?? null;
   const routeStatus = currentRouteResult?.status ??
-    (routeOrigin && destination ? "loading" : "idle");
+    (navigationActive && routeOrigin && destination ? "loading" : "idle");
   const routeError = currentRouteResult?.error ?? "";
 
   const requestRoute = useCallback(
@@ -263,17 +348,17 @@ export default function OutdoorNavigation({
       const requestId = ++routeRequestId.current;
       try {
         const url =
-          `https://routing.openstreetmap.de/routed-foot/route/v1/driving/` +
+          `https://router.project-osrm.org/route/v1/driving/` +
           `${from.longitude},${from.latitude};${to.longitude},${to.latitude}` +
-          "?overview=full&geometries=geojson";
+          "?overview=full&geometries=geojson&steps=true";
         const response = await fetch(url, { signal: controller.signal });
         if (!response.ok) {
-          throw new Error(`Routing service returned HTTP ${response.status}.`);
+          throw new Error("Outdoor route service is unavailable. Please try again or open Google Maps.");
         }
         const result = (await response.json()) as RouteResponse;
         const bestRoute = result.routes?.[0];
         if (result.code !== "Ok" || !bestRoute?.geometry?.coordinates?.length) {
-          throw new Error("No walking route is available for these locations.");
+          throw new Error("No road route is available from your current location to the hospital.");
         }
         if (requestId !== routeRequestId.current) return;
         setRouteResult({
@@ -284,6 +369,9 @@ export default function OutdoorNavigation({
             ),
             distance: bestRoute.distance,
             duration: bestRoute.duration,
+            steps: bestRoute.legs?.flatMap((leg) => leg.steps ?? []) ?? [],
+            origin: from,
+            destination: to,
           },
           status: "ready",
           error: "",
@@ -297,7 +385,7 @@ export default function OutdoorNavigation({
           status: "error",
           error: requestError instanceof Error
             ? requestError.message
-            : "Unable to calculate a walking route. Please try again.",
+            : "Unable to calculate an outdoor road route. Please try again.",
         });
       }
     },
@@ -305,20 +393,21 @@ export default function OutdoorNavigation({
   );
 
   useEffect(() => {
-    const to = hospitalBuildingCoordinates[destinationBuilding] ?? null;
+    const to = hospitalDestination.coordinate;
     const livePosition = hasLiveOrigin ? positionRef.current : null;
     const from = livePosition
       ? { latitude: livePosition.latitude, longitude: livePosition.longitude }
-      : hospitalBuildingCoordinates[startBuilding] ?? null;
-    if (!to || !from) return;
+      : null;
+    if (!navigationActive || !from) return;
     lastRerouteAt.current = Date.now();
     void requestRoute(from, to, routeKey);
   }, [
     destinationBuilding,
     hasLiveOrigin,
+    navigationActive,
     requestRoute,
     routeKey,
-    startBuilding,
+    routeRetryToken,
   ]);
 
   useEffect(() => {
@@ -328,7 +417,8 @@ export default function OutdoorNavigation({
       !hasFreshAccuratePosition ||
       !destination ||
       !route ||
-      routeStatus !== "ready"
+      routeStatus !== "ready" ||
+      !navigationActive
     ) {
       return;
     }
@@ -354,6 +444,7 @@ export default function OutdoorNavigation({
     route,
     routeKey,
     routeStatus,
+    navigationActive,
   ]);
 
   useEffect(
@@ -386,6 +477,28 @@ export default function OutdoorNavigation({
       : false;
   const configuredBuildingCount = coordinates.length;
 
+  const nextStep = route?.steps.find(
+    (step) => step.distance > 0 && step.maneuver?.type !== "arrive",
+  );
+  const nextInstruction = nextStep
+    ? getStepInstruction(nextStep, (key) => t(key, language))
+    : null;
+  const googleOrigin = route?.origin ?? routeOrigin;
+  const googleMapsUrl = googleOrigin
+    ? `https://www.google.com/maps/dir/?api=1&origin=${googleOrigin.latitude},${googleOrigin.longitude}&destination=${hospitalDestination.coordinate.latitude},${hospitalDestination.coordinate.longitude}&travelmode=driving`
+    : null;
+
+  const startNavigation = () => {
+    setNavigationActive(true);
+    startTracking();
+  };
+
+  const stopNavigation = () => {
+    setNavigationActive(false);
+    setRouteResult(null);
+    stopTracking();
+  };
+
   return (
     <div className="outdoor-navigation">
       <section className="card">
@@ -397,11 +510,10 @@ export default function OutdoorNavigation({
             </p>
           </div>
           <div className="outdoor-tracking-actions">
-            {!isTracking ? (
-              <button className="primary" onClick={startTracking} type="button">
-                {t("Start Tracking", language)}
-              </button>
-            ) : (
+            <button className="primary" onClick={startTracking} type="button">
+              {t("Find My Location", language)}
+            </button>
+            {isTracking && (
               <button className="secondary" onClick={stopTracking} type="button">
                 {t("Stop Tracking", language)}
               </button>
@@ -469,25 +581,15 @@ export default function OutdoorNavigation({
       <section className="card">
         <h2 className="section-title">{t("Outdoor Building Navigation", language)}</h2>
         <p className="muted">
-          {t("Use live GPS as your route origin while tracking, or choose a starting building. Walking routes use OpenStreetMap routing data.", language)}
+          {t("Navigate from your current GPS location to Father Muller Medical College Hospital using OpenStreetMap road data.", language)}
         </p>
+        <div className="outdoor-destination-card">
+          <strong>{t(hospitalDestination.name, language)}</strong>
+          <span>{t(hospitalDestination.address, language)}</span>
+        </div>
         <div className="row outdoor-selectors">
           <div>
-            <label htmlFor="outdoor-start-building">{t("START BUILDING", language)}</label>
-            <select
-              id="outdoor-start-building"
-              value={startBuilding}
-              onChange={(event) => setStartBuilding(event.target.value)}
-            >
-              {buildings.map((building) => (
-                <option key={building.id} value={building.id}>
-                  {t(building.name, language)}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label htmlFor="outdoor-destination-building">{t("DESTINATION BUILDING", language)}</label>
+            <label htmlFor="outdoor-destination-building">{t("Building to visit after arrival", language)}</label>
             <select
               id="outdoor-destination-building"
               value={destinationBuilding}
@@ -499,15 +601,48 @@ export default function OutdoorNavigation({
                 </option>
               ))}
             </select>
+            <small className="field-help">
+              {t("First follow the road route to the hospital. Then choose the building for indoor directions.", language)}
+            </small>
+          </div>
+          <div className="outdoor-tracking-actions">
+            <button className="primary" type="button" onClick={startNavigation}>
+              {t("Navigate to Hospital", language)}
+            </button>
+            <button className="secondary" type="button" onClick={() => setRecenterRequest((value) => value + 1)}>
+              {t("Recenter Map", language)}
+            </button>
+            {navigationActive && (
+              <button className="secondary" type="button" onClick={stopNavigation}>
+                {t("Stop Navigation", language)}
+              </button>
+            )}
+            {googleMapsUrl ? (
+              <a
+                className="secondary"
+                href={googleMapsUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                {t("Open in Google Maps", language)}
+              </a>
+            ) : (
+              <button className="secondary" type="button" disabled>
+                {t("Open in Google Maps", language)}
+              </button>
+            )}
           </div>
         </div>
 
         <div className="outdoor-route-summary" aria-live="polite">
-          {routeStatus === "loading" && <span>{t("Calculating walking route…", language)}</span>}
+          {routeStatus === "loading" && <span>{t("Calculating driving route…", language)}</span>}
           {routeStatus === "ready" && route && (
             <>
               <strong>{formatDistance(route.distance)}</strong>
-              <span>{t("Estimated walk", language)} · {formatDuration(route.duration)}</span>
+              <span>{t("Estimated driving time", language)} · {formatDuration(route.duration)}</span>
+              {nextInstruction && (
+                <small><strong>{t("Next direction", language)}:</strong> {nextInstruction}</small>
+              )}
               {position && (
                 <small>
                   {t("GPS route updates when you move off the suggested path.", language)}
@@ -516,33 +651,53 @@ export default function OutdoorNavigation({
             </>
           )}
           {routeStatus === "error" && (
-            <span className="error" role="alert">
-              {t(routeError, language)}
-            </span>
-          )}
-          {routeStatus === "idle" && !destination && destinationBuilding && (
-            <span>
-              {t("Verified entrance coordinates are needed for the selected destination.", language)}
-            </span>
-          )}
-          {routeStatus === "idle" && !destinationBuilding && (
-            <span>{t("Select a destination building to plan a route.", language)}</span>
+            <div className="outdoor-route-error">
+              <span className="error" role="alert">{t(routeError, language)}</span>
+              <button
+                className="secondary"
+                type="button"
+                onClick={() => setRouteRetryToken((value) => value + 1)}
+              >
+                {t("Retry road route", language)}
+              </button>
+            </div>
           )}
           {routeStatus === "idle" && destination && !routeOrigin && (
             <span>
               {position && isTracking && !hasFreshAccuratePosition
                 ? t("A fresh GPS fix with accuracy of 50 m or better is required; alternatively, configure verified entrance coordinates.", language)
-                : t("Start tracking or configure verified coordinates for the starting building.", language)}
+                : t("Find your location to plan a road route to the hospital.", language)}
             </span>
           )}
           {routeStatus === "idle" && destination && routeOrigin && (
-            <span>{t("Preparing the walking route…", language)}</span>
+            <span>{t("Preparing the driving route…", language)}</span>
           )}
         </div>
+        <details className="outdoor-debug">
+          <summary>{t("Routing details", language)}</summary>
+          <dl>
+            <dt>{t("Starting latitude", language)}</dt>
+            <dd>{route?.origin.latitude ?? routeOrigin?.latitude ?? "—"}</dd>
+            <dt>{t("Starting longitude", language)}</dt>
+            <dd>{route?.origin.longitude ?? routeOrigin?.longitude ?? "—"}</dd>
+            <dt>{t("Destination latitude", language)}</dt>
+            <dd>{hospitalDestination.coordinate.latitude}</dd>
+            <dt>{t("Destination longitude", language)}</dt>
+            <dd>{hospitalDestination.coordinate.longitude}</dd>
+            <dt>{t("Routing API", language)}</dt>
+            <dd>{routingProvider}</dd>
+            <dt>{t("Road distance", language)}</dt>
+            <dd>{route ? formatDistance(route.distance) : "—"}</dd>
+            <dt>{t("Estimated duration", language)}</dt>
+            <dd>{route ? formatDuration(route.duration) : "—"}</dd>
+            <dt>{t("Routing error", language)}</dt>
+            <dd>{routeError || t("None", language)}</dd>
+          </dl>
+        </details>
 
         {reachedDestination && (
           <div className="outdoor-arrival" role="status">
-            <strong>{t("You’ve reached", language)} {t(buildings.find((item) => item.id === destinationBuilding)?.name ?? "", language)}.</strong>
+            <strong>{t("You’ve reached", language)} {t(hospitalDestination.name, language)}.</strong>
             <span>{t("GPS does not determine your indoor floor.", language)}</span>
             <button
               className="secondary"
@@ -565,7 +720,23 @@ export default function OutdoorNavigation({
               <TileLayer
                 attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                eventHandlers={{
+                  load: () => setTileError(false),
+                  tileerror: () => setTileError(true),
+                }}
               />
+              {tileError && (
+                <div className="outdoor-map-error" role="alert">
+                  {t("OpenStreetMap map tiles are unavailable. Check your internet connection and try again.", language)}
+                  <button
+                    className="secondary"
+                    type="button"
+                    onClick={() => setTileError(false)}
+                  >
+                    {t("Retry map", language)}
+                  </button>
+                </div>
+              )}
               <Circle
                 center={[
                   hospitalCampusReference.latitude,
@@ -587,21 +758,27 @@ export default function OutdoorNavigation({
               </Circle>
               <Marker
                 position={[
-                  hospitalCampusReference.latitude,
-                  hospitalCampusReference.longitude,
+                  hospitalDestination.coordinate.latitude,
+                  hospitalDestination.coordinate.longitude,
                 ]}
-                icon={campusReferenceIcon}
+                icon={hospitalDestinationIcon}
               >
                 <Popup>
-                  <strong>Father Muller Medical College</strong>
+                  <strong>{t(hospitalDestination.name, language)}</strong>
                   <br />
-                  {t("Supplied campus reference point · not a building entrance.", language)}
+                  {t(hospitalDestination.address, language)}
                 </Popup>
               </Marker>
               <MapViewport
                 position={locationMarker}
                 buildingCoordinates={mapBuildingCoordinates}
                 routeCoordinates={mapRouteCoordinates}
+                recenterRequest={recenterRequest}
+              />
+              <MapActions
+                position={locationMarker}
+                routeCoordinates={mapRouteCoordinates}
+                onRecenter={() => setRecenterRequest((value) => value + 1)}
               />
               {coordinates.map(({ building, coordinate }) => (
                 <Marker
@@ -614,9 +791,7 @@ export default function OutdoorNavigation({
                     <br />
                     {building.id === destinationBuilding
                       ? t("Selected destination", language)
-                      : building.id === startBuilding
-                        ? t("Selected starting building", language)
-                        : t("Hospital building", language)}
+                      : t("Hospital building", language)}
                   </Popup>
                 </Marker>
               ))}

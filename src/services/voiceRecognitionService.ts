@@ -59,6 +59,18 @@ export function createVoiceRecognition(language = "en-US") {
   return recognition;
 }
 
+export async function requestMicrophonePermission() {
+  if (
+    typeof navigator === "undefined" ||
+    !navigator.mediaDevices ||
+    typeof navigator.mediaDevices.getUserMedia !== "function"
+  ) {
+    return;
+  }
+  const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  stream.getTracks().forEach((track) => track.stop());
+}
+
 export function voiceRecognitionErrorMessage(error: string) {
   if (error === "not-allowed" || error === "service-not-allowed") {
     return "Microphone permission was denied. Allow microphone access or use text input.";
@@ -68,7 +80,11 @@ export function voiceRecognitionErrorMessage(error: string) {
     return "No microphone was found. Connect a microphone or use text input.";
   }
   if (error === "network") {
-    return "Speech recognition network service is unavailable. Use text input.";
+    return "The browser speech service is unavailable. Check your internet connection or use text input.";
   }
+  if (error === "language-not-supported") {
+    return "Selected language is not supported by this browser. Use text input.";
+  }
+  if (error === "aborted") return "";
   return `Speech recognition failed (${error}). You can use text input instead.`;
 }
