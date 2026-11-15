@@ -174,7 +174,7 @@
     });
     const smallSign = new THREE.Mesh(new THREE.PlaneGeometry(6, 1.1), new THREE.MeshBasicMaterial({ map: signTexture([{ text: 'ACADEMIC BLOCK III', size: 64, y: 0.55 }], 768, 140, '#9fd3d8', '#ffffff') }));
     smallSign.position.set(-5.25 - CX, 3.6, -lobbyY); smallSign.rotation.y = -Math.PI / 2; shell.add(smallSign);
-    // name board on the roof, facing the main (south) side
+    // name board on the roof above the entrance (west) side, facing the visitor
     const board = new THREE.Group();
     const boardTex = signTexture([
       { text: 'SJEC', size: 120, y: 0.36 },
@@ -185,7 +185,8 @@
     const back = new THREE.Mesh(new THREE.BoxGeometry(20.4, 6.2, 0.3), new THREE.MeshLambertMaterial({ color: 0x174f56 }));
     board.add(back);
     [-7, 7].forEach((dx) => { const leg = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2, 0.4), new THREE.MeshLambertMaterial({ color: 0x55605f })); leg.position.set(dx, -4, -0.2); board.add(leg); });
-    board.position.set(28 - CX, TOP + 5.2, -(4 - CY)); shell.add(board);
+    board.scale.set(0.8, 0.8, 0.8); board.rotation.y = -Math.PI / 2;
+    board.position.set(4 - CX, TOP + 4.6, -(11 - CY)); shell.add(board);
   }
   buildShell();
 
@@ -272,9 +273,9 @@
     let target = new THREE.Vector3(0, tY, 0);
     const narrow = mapEl.clientWidth < 600;
     if (state.outside) {
-      // from the south-west, so the entrance canopy and the main facade both show
+      // from the entrance side (west): the block stands tall, with the canopy and name board facing you
       target = new THREE.Vector3(-2, B.floors.length * H * 0.5, 0);
-      const pos = target.clone().add(new THREE.Vector3(-0.55, 0.32, 0.85).normalize().multiplyScalar(Math.max(125, 40 / (Math.tan(21 * Math.PI / 180) * Math.max(0.3, camera.aspect)))));
+      const pos = target.clone().add(new THREE.Vector3(-1, 0.3, 0.22).normalize().multiplyScalar(Math.max(115, 34 / (Math.tan(21 * Math.PI / 180) * Math.max(0.3, camera.aspect)))));
       if (!animate) { controls.target.copy(target); camera.position.copy(pos); camGoal.t = 1; return; }
       camGoal.fromT = controls.target.clone(); camGoal.fromP = camera.position.clone();
       camGoal.target = target; camGoal.pos = pos; camGoal.t = 0; return;
