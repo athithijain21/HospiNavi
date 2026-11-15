@@ -211,6 +211,11 @@
     fb.hidden = !T.holding;
     if (T.holding) fb.textContent = `I'm on ${T.holding.toFloor === 'G' ? 'the ground floor' : 'floor ' + T.holding.toFloor}`;
     $('wkStride').textContent = `${stride.toFixed(2)} m`;
+    // phone: small card on the map, so the directions panel can stay closed
+    $('wcHead').textContent = head;
+    $('wcText').textContent = main.replace(' Tap the button when you get there.', '');
+    $('wcFloor').hidden = !T.holding;
+    if (T.holding) $('wcFloor').textContent = fb.textContent;
     $('walk').classList.toggle('done', T.arrived);
   }
 
@@ -250,7 +255,8 @@
     try { T.wake = await navigator.wakeLock.request('screen'); } catch (e) { T.wake = null; }
     T.on = true;
     document.getElementById('panel').classList.add('walking');
-    $('walk').hidden = false; $('walkBtn').hidden = true;
+    $('walk').hidden = false; $('walkBtn').hidden = true; $('walkChip').hidden = false;
+    if (NAV.closeDrawer) NAV.closeDrawer();
     $('wkSensor').textContent = 'Waiting for motion sensor…';
     $('wkSim').hidden = true;
     setTimeout(() => {
@@ -268,13 +274,15 @@
     window.removeEventListener('deviceorientation', onOrient);
     try { T.wake && T.wake.release(); } catch (e) { /* ignore */ }
     document.getElementById('panel').classList.remove('walking');
-    $('walk').hidden = true; $('walkBtn').hidden = !route;
+    $('walk').hidden = true; $('walkBtn').hidden = !route; $('walkChip').hidden = true;
     NAV.setFollow(false); NAV.showYou(null);
   }
 
   $('walkBtn').onclick = start;
   $('wkStop').onclick = stop;
   $('wkFloor').onclick = passStop;
+  $('wcFloor').onclick = passStop;
+  $('wcStop').onclick = stop;
   $('wkSim').onclick = () => addSteps(1);
   $('wkMinus').onclick = () => { stride = Math.max(0.4, +(stride - 0.05).toFixed(2)); store.set('nav.stride', stride); render(); };
   $('wkPlus').onclick = () => { stride = Math.min(1.1, +(stride + 0.05).toFixed(2)); store.set('nav.stride', stride); render(); };

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Block III Navigator</title>
+<title>SJEC Block 3 Navigator</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
@@ -106,7 +106,7 @@ li[data-icon="lift"] .ico, li[data-icon="stairs"] .ico { background: var(--ink);
 .rail button.on { background: var(--ink); color: var(--panel); }
 .rail button.onroute::after { content: ""; position: absolute; left: 4px; top: 50%; width: 4px; height: 4px; margin-top: -2px; border-radius: 50%; background: var(--exit); }
 .rail .sep { height: 1px; background: var(--rule); margin: 2px 4px; }
-.floorcap { position: absolute; left: 16px; top: 12px; font-family: var(--f-display); font-weight: 700; font-size: 15px; background: var(--panel); border: 1px solid var(--rule); padding: 6px 10px; border-radius: 8px; box-shadow: var(--shadow); }
+.floorcap { font-family: var(--f-display); font-weight: 700; font-size: 15px; background: var(--panel); border: 1px solid var(--rule); padding: 6px 10px; border-radius: 8px; box-shadow: var(--shadow); }
 .legend { position: absolute; left: 16px; bottom: max(12px, env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--ink-2); background: color-mix(in srgb, var(--panel) 88%, transparent); padding: 6px 10px; border-radius: 8px; max-width: calc(100% - 32px); }
 .maperr { position: absolute; left: 16px; right: 70px; bottom: 56px; background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; font-family: var(--f-mono); font-size: 11px; color: var(--ink); white-space: pre-wrap; word-break: break-word; max-height: 40%; overflow: auto; }
 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
@@ -136,18 +136,38 @@ li[data-icon="lift"] .ico, li[data-icon="stairs"] .ico { background: var(--ink);
 .walk-hint { font-size: 12px; color: var(--ink-2); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
 .panel.walking .route-form, .panel.walking .summary { display: none; }
+.panel-head { display: flex; align-items: start; justify-content: space-between; gap: 8px; }
+.drawer-close, .drawer-btn { display: none; }
+.topbar { position: absolute; left: max(16px, env(safe-area-inset-left, 0px)); top: 12px; display: flex; gap: 8px; align-items: center; z-index: 2; }
+.topbar .floorcap { position: static; }
+.drawer-btn { align-items: center; gap: 6px; box-shadow: var(--shadow); font-weight: 600; }
+.outside-hint { position: absolute; left: 50%; bottom: 56px; transform: translateX(-50%); background: var(--ink); color: var(--panel); padding: 8px 14px; border-radius: 999px; font-size: 13px; font-weight: 500; white-space: nowrap; box-shadow: var(--shadow); pointer-events: none; }
+.walkchip { display: none; }
+.backdrop { display: none; }
 @media (max-width: 760px) {
-  .panel.walking .panel-head { display: none; }
-  .app { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
+  .app { grid-template-columns: 1fr; grid-template-rows: 1fr; }
   .map { grid-row: 1; }
-  .panel { grid-row: 2; border-right: 0; border-top: 1px solid var(--rule); max-height: 52vh; padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .panel { position: fixed; z-index: 30; left: 0; top: 0; bottom: 0; width: min(88vw, 380px); max-height: none !important; border-top: 0 !important; border-right: 1px solid var(--rule);
+    padding-top: env(safe-area-inset-top, 0px); transform: translateX(-102%); transition: transform .25s ease; box-shadow: var(--shadow); }
+  .panel.open { transform: none; }
+  .backdrop { display: block; position: fixed; inset: 0; z-index: 25; background: color-mix(in srgb, var(--ink) 35%, transparent); }
+  .drawer-close { display: inline-block; padding: 6px 10px; }
+  .drawer-btn { display: inline-flex; }
+  .panel.walking .panel-head { display: flex !important; }
+  .walkchip { display: grid; gap: 8px; position: absolute; left: max(12px, env(safe-area-inset-left, 0px)); right: 64px; bottom: max(12px, env(safe-area-inset-bottom, 0px)); background: var(--panel); border: 1px solid var(--rule); border-radius: 12px; padding: 10px 12px; box-shadow: var(--shadow); z-index: 3; }
+  .walkchip[hidden] { display: none !important; }
+  .wc-row { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; font-size: 14px; line-height: 1.35; }
+  .wc-row b { font-family: var(--f-display); font-size: 17px; }
+  .wc-btns { justify-content: flex-end; }
+  .wc-btns .btn.primary { flex: 1; padding: 10px; }
+  .outside-hint { bottom: max(20px, env(safe-area-inset-bottom, 0px)); }
+}
+@media (max-width: 760px) {
   .panel-head { padding-block: 10px 6px; }
   h1 { font-size: 18px; }
   .legend { display: none; }
   .rail { top: 8px; padding: 3px; gap: 2px; }
   .rail button { width: 36px; height: 28px; font-size: 13px; }
-  .floorcap { top: 8px; left: max(12px, env(safe-area-inset-left, 0px)); }
-  .panel.collapsed .steps-wrap { display: none; }
 }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
@@ -157,8 +177,11 @@ li[data-icon="lift"] .ico, li[data-icon="stairs"] .ico { background: var(--ink);
 <div class="app" id="app">
   <aside class="panel" id="panel">
     <div class="panel-head">
-      <span class="eyebrow">SJEC · Academic Block III</span>
-      <h1>Block III Navigator</h1>
+      <div>
+        <span class="eyebrow">St Joseph Engineering College</span>
+        <h1>SJEC Academic Block 3</h1>
+      </div>
+      <button class="btn drawer-close" id="drawerClose" aria-label="Close directions">✕</button>
     </div>
     <div class="route-form">
       <span class="dot from" aria-hidden="true"></span>
@@ -217,9 +240,24 @@ li[data-icon="lift"] .ico, li[data-icon="stairs"] .ico { background: var(--ink);
     </div>
   </aside>
 
+  <div class="backdrop" id="backdrop" hidden></div>
   <main class="map" id="map">
     <div class="labels" id="labels"></div>
-    <div class="floorcap" id="floorcap">Ground floor</div>
+    <div class="topbar">
+      <button class="btn drawer-btn" id="drawerBtn" aria-controls="panel" aria-expanded="false">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M2 4h12M2 8h12M2 12h8" stroke="currentColor" stroke-width="1.8"/></svg>
+        Directions
+      </button>
+      <div class="floorcap" id="floorcap">Ground floor</div>
+    </div>
+    <div class="outside-hint" id="outsideHint" hidden>Tap the building to look inside</div>
+    <div class="walkchip" id="walkChip" hidden aria-live="polite">
+      <div class="wc-row"><b id="wcHead"></b><span id="wcText"></span></div>
+      <div class="wc-row wc-btns">
+        <button class="btn primary" id="wcFloor" hidden>I'm on floor 3</button>
+        <button class="btn" id="wcStop">Stop</button>
+      </div>
+    </div>
     <nav class="rail" id="rail" aria-label="Floors"></nav>
     <div class="legend" id="legend"></div>
     <div class="maperr" id="maperr" hidden></div>
@@ -251,9 +289,9 @@ window.addEventListener('error', function (e) {
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="data/block3.js?v=6"></script>
-<script src="js/graph.js?v=6"></script>
-<script src="js/app.js?v=6"></script>
-<script src="js/tracking.js?v=6"></script>
+<script src="data/block3.js?v=7"></script>
+<script src="js/graph.js?v=7"></script>
+<script src="js/app.js?v=7"></script>
+<script src="js/tracking.js?v=7"></script>
 </body>
 </html>

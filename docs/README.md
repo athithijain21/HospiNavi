@@ -1,4 +1,4 @@
-# Block III Navigator (web version)
+# SJEC Academic Block 3 Navigator
 
 Indoor navigation for Academic Block III, SJEC. Opens in any phone browser:
 pick where you are and where you want to go, then tap **Start walking** and

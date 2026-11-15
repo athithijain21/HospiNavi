@@ -38,7 +38,7 @@
   const display = (p) => `${p.no ? p.no + ' · ' : ''}${p.name} · ${p.floor === 'G' ? 'Ground' : 'Floor ' + p.floor}`;
 
   // ---------- state ----------
-  const state = { from: null, to: null, floor: 'G', all: false, res: null, steps: [], activeStep: -1 };
+  const state = { from: null, to: null, floor: 'G', all: false, outside: true, res: null, steps: [], activeStep: -1 };
 
   // ---------- three.js scene ----------
   const mapEl = $('map'), labelsEl = $('labels');
@@ -98,6 +98,97 @@
   }
   buildFloors();
 
+  // ---------- outside view: the block as it looks from the road ----------
+  // SJEC academic blocks: khaki-olive walls, cream floor bands, dark glass (some red curtains),
+  // a curved entrance canopy with the block's name board.
+  const SJEC = { wall: 0xb4ac83, band: 0xd8d1ad, roof: 0x9d9671, glass: 0x34444c, curtain: 0x8e3a3a, frame: 0xe7e1c6, sign: 0x9fd3d8, ground: 0xb7bfa9 };
+  const shell = new THREE.Group(); shell.visible = false; scene.add(shell);
+  function signTexture(lines, w, h, bg, fg) {
+    const c = document.createElement('canvas'); c.width = w; c.height = h;
+    const x = c.getContext('2d');
+    x.fillStyle = bg; x.fillRect(0, 0, w, h);
+    x.strokeStyle = 'rgba(255,255,255,.85)'; x.lineWidth = h * 0.05; x.strokeRect(h * 0.06, h * 0.06, w - h * 0.12, h - h * 0.12);
+    x.fillStyle = fg; x.textAlign = 'center'; x.textBaseline = 'middle';
+    lines.forEach((ln, i) => {
+      x.font = `${ln.weight || 800} ${ln.size}px Archivo, "Helvetica Neue", Arial, sans-serif`;
+      x.fillText(ln.text, w / 2, h * ln.y);
+    });
+    const t = new THREE.CanvasTexture(c); t.anisotropy = 4; return t;
+  }
+  function buildShell() {
+    const N = B.floors.length, TOP = N * H;
+    const outline = B.outline.map(([x, y]) => new THREE.Vector2(x - CX, y - CY));
+    const shape = new THREE.Shape(outline);
+    const prism = (depth, color, y0, scale = 1) => {
+      const m = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false }), new THREE.MeshLambertMaterial({ color }));
+      m.rotation.x = -Math.PI / 2; m.position.y = y0; m.scale.set(scale, scale, 1); shell.add(m); return m;
+    };
+    // ground
+    const ground = new THREE.Mesh(new THREE.CircleGeometry(95, 56), new THREE.MeshLambertMaterial({ color: SJEC.ground }));
+    ground.rotation.x = -Math.PI / 2; ground.position.y = -0.3; shell.add(ground);
+    // walls, floor bands, roof
+    prism(TOP, SJEC.wall, 0);
+    for (let f = 1; f <= N; f++) prism(0.45, SJEC.band, f * H - 0.45, 1.006);
+    prism(0.9, SJEC.roof, TOP, 0.996);
+    // windows on every wall longer than 3 m
+    let area = 0;
+    for (let i = 0; i < B.outline.length; i++) { const [x1, y1] = B.outline[i], [x2, y2] = B.outline[(i + 1) % B.outline.length]; area += x1 * y2 - x2 * y1; }
+    const ccw = area > 0, spots = [];
+    for (let i = 0; i < B.outline.length; i++) {
+      const [x1, y1] = B.outline[i], [x2, y2] = B.outline[(i + 1) % B.outline.length];
+      const L = Math.hypot(x2 - x1, y2 - y1); if (L < 3) continue;
+      const ux = (x2 - x1) / L, uy = (y2 - y1) / L;
+      const nx = ccw ? uy : -uy, ny = ccw ? -ux : ux; // outward normal
+      const n = Math.max(1, Math.floor((L - 1) / 3.4));
+      for (let k = 0; k < n; k++) {
+        const t = (k + 0.5) / n * L;
+        spots.push({ x: x1 + ux * t + nx * 0.08, y: y1 + uy * t + ny * 0.08, nx, ny });
+      }
+    }
+    const count = spots.length * N;
+    const winGeo = new THREE.BoxGeometry(1.7, 1.6, 0.12), frameGeo = new THREE.BoxGeometry(2.0, 1.9, 0.08);
+    const wins = new THREE.InstancedMesh(winGeo, new THREE.MeshLambertMaterial({ color: 0xffffff }), count);
+    const frames = new THREE.InstancedMesh(frameGeo, new THREE.MeshLambertMaterial({ color: SJEC.frame }), count);
+    const dummy = new THREE.Object3D(), glass = new THREE.Color(SJEC.glass), curtain = new THREE.Color(SJEC.curtain);
+    let k = 0, seed = 7;
+    const rnd = () => { seed = (seed * 9301 + 49297) % 233280; return seed / 233280; };
+    for (let f = 0; f < N; f++) {
+      spots.forEach((sp) => {
+        const pos = new THREE.Vector3(sp.x - CX, f * H + 1.9, -(sp.y - CY));
+        dummy.position.copy(pos); dummy.lookAt(pos.clone().add(new THREE.Vector3(sp.nx, 0, -sp.ny))); dummy.updateMatrix();
+        frames.setMatrixAt(k, dummy.matrix);
+        dummy.position.add(new THREE.Vector3(sp.nx * 0.05, 0, -sp.ny * 0.05)); dummy.updateMatrix();
+        wins.setMatrixAt(k, dummy.matrix);
+        wins.setColorAt(k, rnd() < 0.18 ? curtain : glass);
+        k++;
+      });
+    }
+    shell.add(frames, wins);
+    // entrance canopy on the lobby side (west), like the real block
+    const lobbyY = 14.8 - CY;
+    const canopy = new THREE.Mesh(new THREE.CylinderGeometry(5.2, 5.2, 0.7, 40, 1, false, Math.PI, Math.PI), new THREE.MeshLambertMaterial({ color: SJEC.band }));
+    canopy.position.set(0 - CX, 3.6, -lobbyY); shell.add(canopy);
+    [-3.2, 3.2].forEach((dz) => {
+      const col = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 3.6, 16), new THREE.MeshLambertMaterial({ color: SJEC.band }));
+      col.position.set(-3.8 - CX, 1.8, -lobbyY + dz); shell.add(col);
+    });
+    const smallSign = new THREE.Mesh(new THREE.PlaneGeometry(6, 1.1), new THREE.MeshBasicMaterial({ map: signTexture([{ text: 'ACADEMIC BLOCK III', size: 64, y: 0.55 }], 768, 140, '#9fd3d8', '#ffffff') }));
+    smallSign.position.set(-5.25 - CX, 3.6, -lobbyY); smallSign.rotation.y = -Math.PI / 2; shell.add(smallSign);
+    // name board on the roof, facing the main (south) side
+    const board = new THREE.Group();
+    const boardTex = signTexture([
+      { text: 'SJEC', size: 120, y: 0.36 },
+      { text: 'ACADEMIC BLOCK 3', size: 96, y: 0.72, weight: 700 },
+    ], 1024, 300, '#1f6f78', '#ffffff');
+    const face = new THREE.Mesh(new THREE.PlaneGeometry(20, 5.9), new THREE.MeshBasicMaterial({ map: boardTex }));
+    face.position.z = 0.16; board.add(face);
+    const back = new THREE.Mesh(new THREE.BoxGeometry(20.4, 6.2, 0.3), new THREE.MeshLambertMaterial({ color: 0x174f56 }));
+    board.add(back);
+    [-7, 7].forEach((dx) => { const leg = new THREE.Mesh(new THREE.BoxGeometry(0.4, 2, 0.4), new THREE.MeshLambertMaterial({ color: 0x55605f })); leg.position.set(dx, -4, -0.2); board.add(leg); });
+    board.position.set(28 - CX, TOP + 5.2, -(4 - CY)); shell.add(board);
+  }
+  buildShell();
+
   // route objects
   const routeGroup = new THREE.Group(); scene.add(routeGroup);
   let routeArrows = [];
@@ -112,7 +203,7 @@
   function drawRoute() {
     clearRoute();
     floorGroups.forEach((grp, fi) => { grp.position.y = fi * gap(); });
-    if (!state.res) return;
+    if (!state.res || state.outside) return;
     const P = state.res.path.filter((n, i, a) => i === 0 || Math.hypot(n.x - a[i - 1].x, n.y - a[i - 1].y) > 0.01 || n.fi !== a[i - 1].fi);
     const green = new THREE.Color(css('--exit') || '#138a4a');
     const pts = P.map((n) => V(n.x, n.y, n.fi, 0.9));
@@ -157,9 +248,12 @@
 
   function applyFloorVisibility() {
     const f = fidx(state.floor);
+    shell.visible = state.outside;
+    $('outsideHint').hidden = !state.outside;
     mats.forEach(({ m, base, fi, kind }) => {
       let o;
-      if (state.all) o = base * (kind === 'line' ? 0.5 : 0.55);
+      if (state.outside) o = 0;
+      else if (state.all) o = base * (kind === 'line' ? 0.5 : 0.55);
       else if (fi === f) o = base;
       else if (fi < f) o = kind === 'line' ? 0.12 : base * 0.08;
       else o = 0;
@@ -175,8 +269,16 @@
   function frame(animate = true) {
     const f = fidx(state.floor);
     const tY = state.all ? (B.floors.length - 1) * gap() / 2 : f * gap();
-    const target = new THREE.Vector3(0, tY, 0);
+    let target = new THREE.Vector3(0, tY, 0);
     const narrow = mapEl.clientWidth < 600;
+    if (state.outside) {
+      // from the south-west, so the entrance canopy and the main facade both show
+      target = new THREE.Vector3(-2, B.floors.length * H * 0.5, 0);
+      const pos = target.clone().add(new THREE.Vector3(-0.55, 0.32, 0.85).normalize().multiplyScalar(Math.max(125, 40 / (Math.tan(21 * Math.PI / 180) * Math.max(0.3, camera.aspect)))));
+      if (!animate) { controls.target.copy(target); camera.position.copy(pos); camGoal.t = 1; return; }
+      camGoal.fromT = controls.target.clone(); camGoal.fromP = camera.position.clone();
+      camGoal.target = target; camGoal.pos = pos; camGoal.t = 0; return;
+    }
     const dist = state.all ? 150 : narrow ? 105 : 80;
     const dir = new THREE.Vector3(0.0, state.all ? 0.55 : 0.95, 0.75).normalize();
     const pos = target.clone().add(dir.multiplyScalar(dist));
@@ -190,6 +292,7 @@
   function buildLabels() {
     labelsEl.innerHTML = '';
     labelNodes = [];
+    if (state.outside) return;
     const f = fidx(state.floor);
     const fl = B.floors[f];
     const show = state.all ? [] : fl.rooms.map((rm) => ({ id: rm.id, name: rm.name, no: rm.no, x: rm.rect[0] + rm.rect[2] / 2, y: rm.rect[1] + rm.rect[3] / 2, fi: f }));
@@ -228,20 +331,26 @@
     home.innerHTML = '<svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><circle cx="8" cy="8" r="4.5" stroke="currentColor" stroke-width="1.6" fill="none"/><circle cx="8" cy="8" r="1.4" fill="currentColor"/><path d="M8 0.5v3M8 12.5v3M0.5 8h3M12.5 8h3" stroke="currentColor" stroke-width="1.6"/></svg>';
     home.onclick = () => frame(true);
     rail.appendChild(home);
+    const out = document.createElement('button');
+    out.title = 'Outside view of the block'; out.setAttribute('aria-label', 'Outside view of the block');
+    out.className = state.outside ? 'on' : '';
+    out.innerHTML = '<svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path d="M2 14.5h12M3.5 14.5V4l4.5-2.5L12.5 4v10.5" stroke="currentColor" stroke-width="1.5" fill="none"/><path d="M6 6.5h1.3M8.7 6.5H10M6 9h1.3M8.7 9H10M7 14.5v-2.5h2v2.5" stroke="currentColor" stroke-width="1.4"/></svg>';
+    out.onclick = () => { state.outside = true; refreshView(true); };
+    rail.appendChild(out);
     const sep0 = document.createElement('div'); sep0.className = 'sep'; rail.appendChild(sep0);
     const all = document.createElement('button');
-    all.textContent = 'All'; all.title = 'Show all floors'; all.className = state.all ? 'on' : '';
-    all.onclick = () => { state.all = !state.all; refreshView(true); };
+    all.textContent = 'All'; all.title = 'Show all floors'; all.className = state.all && !state.outside ? 'on' : '';
+    all.onclick = () => { state.all = state.outside ? true : !state.all; state.outside = false; refreshView(true); };
     rail.appendChild(all);
     const sep = document.createElement('div'); sep.className = 'sep'; rail.appendChild(sep);
     [...B.floors].reverse().forEach((F) => {
       const b = document.createElement('button');
       b.textContent = F.code; b.title = floorLabel(F.code);
-      b.className = (!state.all && F.code === state.floor ? 'on ' : '') + (onRoute.has(F.code) ? 'onroute' : '');
-      b.onclick = () => { state.all = false; state.floor = F.code; refreshView(true); };
+      b.className = (!state.all && !state.outside && F.code === state.floor ? 'on ' : '') + (onRoute.has(F.code) ? 'onroute' : '');
+      b.onclick = () => { state.all = false; state.outside = false; state.floor = F.code; refreshView(true); };
       rail.appendChild(b);
     });
-    $('floorcap').textContent = state.all ? 'All floors' : floorLabel(state.floor);
+    $('floorcap').textContent = state.outside ? 'SJEC Academic Block 3' : state.all ? 'All floors' : floorLabel(state.floor);
   }
 
   function refreshView(animate) {
@@ -275,6 +384,7 @@
     if (state.res) {
       const floors = new Set(state.res.path.map((n) => n.floor));
       state.floor = state.from.floor;
+      state.outside = false;
       state.all = floors.size > 1; // show the whole trip first; tap a step to zoom to its floor
     } else if (state.to) state.floor = state.to.floor;
     else if (state.from) state.floor = state.from.floor;
@@ -308,7 +418,7 @@
       li.dataset.icon = s.icon; li.tabIndex = 0;
       li.innerHTML = `<span class="ico">${icons[s.icon] || icons.walk}</span><span class="stxt"></span><span class="sfl">${s.floor}</span>`;
       li.querySelector('.stxt').textContent = s.text;
-      const go = () => { state.activeStep = i; [...ol.children].forEach((c, k) => c.classList.toggle('active', k === i)); state.all = false; state.floor = s.floor; refreshView(true); };
+      const go = () => { state.activeStep = i; [...ol.children].forEach((c, k) => c.classList.toggle('active', k === i)); state.all = false; state.outside = false; state.floor = s.floor; refreshView(true); };
       li.onclick = go; li.onkeydown = (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } };
       ol.appendChild(li);
     });
@@ -410,6 +520,7 @@
   renderer.domElement.addEventListener('pointerdown', (e) => { downAt = [e.clientX, e.clientY]; });
   renderer.domElement.addEventListener('pointerup', (e) => {
     if (!downAt || Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]) > 6) return;
+    if (state.outside) { state.outside = false; state.all = !!(state.res && new Set(state.res.path.map((n) => n.floor)).size > 1); refreshView(true); return; }
     const r = renderer.domElement.getBoundingClientRect();
     mouse.set(((e.clientX - r.left) / r.width) * 2 - 1, -((e.clientY - r.top) / r.height) * 2 + 1);
     ray.setFromCamera(mouse, camera);
@@ -422,6 +533,18 @@
     if (!state.from) fromBox.set(p); else toBox.set(p);
     compute();
   });
+
+  // ---------- phone: directions panel slides in from the left ----------
+  const panel = $('panel'), backdrop = $('backdrop');
+  const isPhone = () => matchMedia('(max-width: 760px)').matches;
+  function openDrawer(open) {
+    panel.classList.toggle('open', open); backdrop.hidden = !open;
+    $('drawerBtn').setAttribute('aria-expanded', open ? 'true' : 'false');
+  }
+  $('drawerBtn').onclick = () => openDrawer(!panel.classList.contains('open'));
+  $('drawerClose').onclick = () => openDrawer(false);
+  backdrop.onclick = () => openDrawer(false);
+  $('steps').addEventListener('click', () => { if (isPhone()) setTimeout(() => openDrawer(false), 150); });
 
   // ---------- "you are here" marker for live tracking ----------
   const you = new THREE.Group(); you.visible = false; scene.add(you);
@@ -447,13 +570,14 @@
       fromBox.set(p); compute();
     },
     // used by js/tracking.js
+    closeDrawer() { if (isPhone()) openDrawer(false); },
     getRoute() { return { res: state.res, steps: state.steps, from: state.from, to: state.to }; },
     onRoute(cb) { routeListeners.push(cb); },
     showYou(pos) { youPos = pos; you.visible = !!pos; },   // pos = {fi, x, y} in metres, or null
     setFollow(on) { follow = !!on; },
     focusFloor(code, zoomIn) {
-      if (!state.all && state.floor === code && !zoomIn) return;
-      state.all = false; state.floor = code; refreshView(true);
+      if (!state.all && !state.outside && state.floor === code && !zoomIn) return;
+      state.all = false; state.outside = false; state.floor = code; refreshView(true);
       if (zoomIn) { camGoal.pos = camGoal.target.clone().add(new THREE.Vector3(0, 0.95, 0.75).normalize().multiplyScalar(mapEl.clientWidth < 600 ? 70 : 60)); }
     },
     highlightStep(i) {
@@ -524,6 +648,7 @@
   fromBox.set(u.from || byId.get('G-LOBBY'));
   toBox.set(u.to || (u.from ? null : byId.get('6-IOT')));
   compute();
-  frame(false);
+  state.outside = true; // open on the outside view of the block; tap it to go inside
+  refreshView(false);
   requestAnimationFrame(tick);
 })();
