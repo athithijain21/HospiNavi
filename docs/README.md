@@ -1,47 +1,40 @@
 # Block III Navigator (web version)
 
 Indoor navigation for Academic Block III, SJEC. Opens in any phone browser:
-pick where you are, pick where you want to go, and follow the route on a 3D
-model of the block, with step-by-step directions across all 8 floors.
+pick where you are and where you want to go, then tap **Start walking** and
+a blue dot follows you along the route as you walk.
 
 ## Files
 
 | File | What it is |
 |---|---|
 | `index.html` | The page: layout, styles, and the libraries it loads |
-| `data/block3.js` | **The map.** Every floor, room, corridor, staircase and lift, in metres. Edit this to fix names or add room numbers. |
-| `js/graph.js` | Route finding (Dijkstra) and the turn-by-turn directions. No 3D code, so it can be reused for live tracking later. |
-| `js/app.js` | The 3D view (Three.js), search boxes, floor buttons and QR code sheet. |
+| `data/block3.js` | **The map.** Floors, rooms, corridors, stairs, lifts in metres |
+| `js/graph.js` | Route finding and turn-by-turn directions |
+| `js/app.js` | 3D view, search boxes, floor buttons, QR code sheet |
+| `js/tracking.js` | **Live tracking by counting footsteps** (phone motion sensor) |
 
-## Run it on your laptop
+## How the live tracking works
 
-Open the folder in VS Code, install the **Live Server** extension, right-click
-`index.html` → **Open with Live Server**.
+1. The phone's accelerometer reports movement about 60 times a second.
+2. Each footstep makes a small bounce. Every bounce bigger than the threshold = 1 step.
+3. Each step moves the dot forward along the route by the step length (default 0.70 m).
+   The dot is locked to the route line, so it always stays in the corridor.
+4. At a lift or staircase the dot waits (steps on the stairs don't move it).
+   Tap **"I'm on floor X"** when you arrive.
+5. If the dot drifts, tap the direction you're actually at in the list to snap it there,
+   or scan the nearest door's QR code.
 
-## Put it online (free, GitHub Pages)
+Tuning: if the dot runs ahead, make the step length shorter; if it lags, make it longer.
+If steps are missed, choose **Light steps**; if it counts steps while standing, choose **Firm steps**.
 
-1. Copy this `docs` folder into the root of the `HospitalNavi` repo.
-2. `git add docs` → `git commit -m "Add web navigator"` → `git push`
-3. On GitHub: **Settings → Pages → Source: Deploy from a branch → Branch: `main`, folder: `/docs` → Save**.
-4. After a minute it is live at `https://athithijain21.github.io/HospitalNavi/`.
+Testing on a laptop: there's no motion sensor, so a **+1 step** button appears
+(or press Space / ↑).
 
-## QR codes
+Needs HTTPS (GitHub Pages is fine). iPhones ask for "Motion & Orientation" permission when you tap Start walking.
 
-Click **QR codes** in the app, pick a floor and print the sheet. Each code opens
-the site with that room already set as the starting point
-(`?from=6-T1`). Stick each one next to its door. Lifts and both staircases get codes too.
+## Put it online
 
-## Fixing the map data
-
-Open `data/block3.js`:
-
-- `name` – what the room is called on the app
-- `no` – the real room number (e.g. `'3605'`); add it and people can search by number
-- `verify: true` – the name came from the architect's drawing and should be checked on site
-- `door` – where the room's door is, `[x, y]` in metres
-
-## Live tracking later
-
-`js/app.js` exposes `window.BlockNav.setPosition({ floor: '6', x: 20, y: 11.6 })`.
-A step counter, Wi-Fi/BLE positioning or the Unity AR app can call this to move
-the start point and re-route as the person walks.
+Copy this `docs` folder into the root of the `HospiNavi` repo, then
+`git add docs`, `git commit -m "..."`, `git push`. GitHub Pages serves it at
+`https://athithijain21.github.io/HospiNavi/`.

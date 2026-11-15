@@ -108,6 +108,7 @@ li[data-icon="lift"] .ico, li[data-icon="stairs"] .ico { background: var(--ink);
 .rail .sep { height: 1px; background: var(--rule); margin: 2px 4px; }
 .floorcap { position: absolute; left: 16px; top: 12px; font-family: var(--f-display); font-weight: 700; font-size: 15px; background: var(--panel); border: 1px solid var(--rule); padding: 6px 10px; border-radius: 8px; box-shadow: var(--shadow); }
 .legend { position: absolute; left: 16px; bottom: max(12px, env(safe-area-inset-bottom, 0px)); display: flex; gap: 10px; flex-wrap: wrap; font-size: 11px; color: var(--ink-2); background: color-mix(in srgb, var(--panel) 88%, transparent); padding: 6px 10px; border-radius: 8px; max-width: calc(100% - 32px); }
+.maperr { position: absolute; left: 16px; right: 70px; bottom: 56px; background: var(--panel); border: 1px solid var(--rule); border-radius: 8px; padding: 10px 12px; font-family: var(--f-mono); font-size: 11px; color: var(--ink); white-space: pre-wrap; word-break: break-word; max-height: 40%; overflow: auto; }
 .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
 
 .sheet { position: fixed; inset: 0; background: color-mix(in srgb, var(--ink) 40%, transparent); z-index: 20; display: grid; place-items: center; padding: 16px; }
@@ -122,7 +123,21 @@ li[data-icon="lift"] .ico, li[data-icon="stairs"] .ico { background: var(--ink);
 .qr b { font-size: 12px; }
 .qr span { font-family: var(--f-mono); font-size: 10px; color: #4b5870; word-break: break-all; }
 
+.walkbtn { margin-left: auto; }
+.walk { border: 1px solid var(--rule); border-radius: 12px; padding: 12px; margin-block: 12px 4px; display: grid; gap: 8px; background: var(--field); }
+.walk.done { border-color: var(--exit); background: var(--exit-soft); }
+.walk-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.walk-head { font-family: var(--f-display); font-weight: 800; font-size: 24px; font-variant-numeric: tabular-nums; }
+.walk-text { margin: 0; font-size: 16px; line-height: 1.4; }
+.walk-floor { width: 100%; padding: 12px; font-size: 15px; }
+.walk-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; color: var(--ink-2); font-size: 13px; }
+.btn.small { padding: 4px 10px; font-size: 13px; }
+.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+.walk-hint { font-size: 12px; color: var(--ink-2); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.panel.walking .route-form, .panel.walking .summary { display: none; }
 @media (max-width: 760px) {
+  .panel.walking .panel-head { display: none; }
   .app { grid-template-columns: 1fr; grid-template-rows: 1fr auto; }
   .map { grid-row: 1; }
   .panel { grid-row: 2; border-right: 0; border-top: 1px solid var(--rule); max-height: 52vh; padding-right: max(16px, env(safe-area-inset-right, 0px)); }
@@ -162,9 +177,35 @@ li[data-icon="lift"] .ico, li[data-icon="stairs"] .ico { background: var(--ink);
         <label><input type="checkbox" id="noLifts"> Avoid lifts</label>
       </div>
     </div>
+    <div class="walk" id="walk" hidden aria-live="polite">
+      <div class="walk-top">
+        <span class="walk-head" id="wkHead">In 8 m</span>
+        <button class="btn" id="wkStop">Stop</button>
+      </div>
+      <p class="walk-text" id="wkText"></p>
+      <button class="btn primary walk-floor" id="wkFloor" hidden>I'm on floor 6</button>
+      <div class="walk-meta">
+        <span id="wkCount">0 steps</span>
+        <button class="btn small" id="wkSim" hidden>+1 step</button>
+      </div>
+      <div class="walk-meta">
+        <span>Step length</span>
+        <button class="btn small" id="wkMinus" aria-label="Shorter steps">−</button>
+        <span id="wkStride" class="mono">0.70 m</span>
+        <button class="btn small" id="wkPlus" aria-label="Longer steps">+</button>
+        <label for="wkSens" class="sr">Sensitivity</label>
+        <select id="wkSens" class="btn small" aria-label="Step sensitivity">
+          <option value="low">Firm steps</option>
+          <option value="normal">Normal</option>
+          <option value="high">Light steps</option>
+        </select>
+      </div>
+      <div class="walk-hint"><span id="wkSensor">Waiting for motion sensor…</span> · Dot off? Tap the direction you're at.</div>
+    </div>
     <div class="summary" id="summary" hidden>
       <span class="big" id="sumMetres"></span>
       <span class="meta" id="sumMeta"></span>
+      <button class="btn primary walkbtn" id="walkBtn" hidden>Start walking</button>
     </div>
     <div class="steps-wrap">
       <ol class="steps" id="steps"></ol>
@@ -181,6 +222,7 @@ li[data-icon="lift"] .ico, li[data-icon="stairs"] .ico { background: var(--ink);
     <div class="floorcap" id="floorcap">Ground floor</div>
     <nav class="rail" id="rail" aria-label="Floors"></nav>
     <div class="legend" id="legend"></div>
+    <div class="maperr" id="maperr" hidden></div>
   </main>
 </div>
 
@@ -199,11 +241,19 @@ li[data-icon="lift"] .ico, li[data-icon="stairs"] .ico { background: var(--ink);
   </div>
 </div>
 
+<script>
+window.addEventListener('error', function (e) {
+  var box = document.getElementById('maperr'); if (!box) return;
+  box.hidden = false;
+  box.textContent = 'Map error (please screenshot this):\n' + (e.message || e) + (e.error && e.error.stack ? '\n' + e.error.stack.split('\n').slice(0, 4).join('\n') : '');
+});
+</script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-<script src="data/block3.js"></script>
-<script src="js/graph.js"></script>
-<script src="js/app.js"></script>
+<script src="data/block3.js?v=5"></script>
+<script src="js/graph.js?v=5"></script>
+<script src="js/app.js?v=5"></script>
+<script src="js/tracking.js?v=5"></script>
 </body>
 </html>

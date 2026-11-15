@@ -280,7 +280,9 @@
     else if (state.from) state.floor = state.from.floor;
     refreshView(true);
     writeUrl();
+    routeListeners.forEach((cb) => { try { cb(state.res, state.steps); } catch (e) { console.error(e); } });
   }
+  const routeListeners = [];
 
   function renderSteps() {
     const ol = $('steps'); ol.innerHTML = '';
@@ -421,6 +423,15 @@
     compute();
   });
 
+  // ---------- "you are here" marker for live tracking ----------
+  const you = new THREE.Group(); you.visible = false; scene.add(you);
+  const youBlue = new THREE.Color(0x2f7df6);
+  const youDot = new THREE.Mesh(new THREE.SphereGeometry(0.9, 20, 14), new THREE.MeshBasicMaterial({ color: youBlue, depthTest: false }));
+  youDot.position.y = 1.3; youDot.renderOrder = 9; you.add(youDot);
+  const youRing = new THREE.Mesh(new THREE.RingGeometry(1.2, 2.4, 40), new THREE.MeshBasicMaterial({ color: youBlue, transparent: true, opacity: 0.35, depthTest: false, side: THREE.DoubleSide }));
+  youRing.rotation.x = -Math.PI / 2; youRing.position.y = 0.6; youRing.renderOrder = 8; you.add(youRing);
+  let youPos = null, follow = false;
+
   // ---------- live position hook (for step tracking / AR later) ----------
   // window.BlockNav.setStart('6-T1') or .setPosition({floor:'6', x: 20, y: 11.6})
   window.BlockNav = {
@@ -434,6 +445,21 @@
       const p = { id: best.n.id, floor, fi: best.n.fi, name: 'Your position', no: '', type: 'here', landmark: true };
       byId.set(p.id, p); best.n.ref = best.n.ref || { name: 'your position' };
       fromBox.set(p); compute();
+    },
+    // used by js/tracking.js
+    getRoute() { return { res: state.res, steps: state.steps, from: state.from, to: state.to }; },
+    onRoute(cb) { routeListeners.push(cb); },
+    showYou(pos) { youPos = pos; you.visible = !!pos; },   // pos = {fi, x, y} in metres, or null
+    setFollow(on) { follow = !!on; },
+    focusFloor(code, zoomIn) {
+      if (!state.all && state.floor === code && !zoomIn) return;
+      state.all = false; state.floor = code; refreshView(true);
+      if (zoomIn) { camGoal.pos = camGoal.target.clone().add(new THREE.Vector3(0, 0.95, 0.75).normalize().multiplyScalar(mapEl.clientWidth < 600 ? 70 : 60)); }
+    },
+    highlightStep(i) {
+      const ol = $('steps'); state.activeStep = i;
+      [...ol.children].forEach((c, k) => c.classList.toggle('active', k === i));
+      const li = ol.children[i]; if (li) li.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     },
   };
 
@@ -477,6 +503,16 @@
         a.position.copy(p);
         if (t) a.lookAt(p.clone().add(t));
       });
+    }
+    if (youPos) {
+      const p = V(youPos.x, youPos.y, youPos.fi, 0);
+      you.position.copy(p);
+      const k = 1 + 0.25 * Math.sin(now / 250);
+      youRing.scale.set(k, k, k);
+      if (follow && camGoal.t >= 1) {
+        const d = new THREE.Vector3(p.x - controls.target.x, 0, p.z - controls.target.z).multiplyScalar(Math.min(1, dt * 3));
+        controls.target.add(d); camera.position.add(d);
+      }
     }
     renderer.render(scene, camera);
     placeLabels();

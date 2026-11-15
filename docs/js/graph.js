@@ -150,7 +150,7 @@ window.NavGraph = (function () {
     const s = first.kind === 'room' ? 1 : 0;
     const e = endRoom ? P.length - 2 : P.length - 1;
     const startName = first.ref ? first.ref.name : 'your position';
-    steps.push({ icon: 'start', text: `Start at ${startName}, ${floorName(first.floor)}.`, floor: first.floor });
+    steps.push({ icon: 'start', text: `Start at ${startName}, ${floorName(first.floor)}.`, floor: first.floor, at: P[0] });
 
     // split into same-floor legs with vertical moves in between
     const legs = [[P[s]]], moves = [];
@@ -192,10 +192,10 @@ window.NavGraph = (function () {
           const t = turn(heading, dirOf(pts[1], pts[2]));
           const w = len(pts[1], pts[2]);
           const into = t === 'left' || t === 'right' ? `turn ${t}` : 'go straight on';
-          steps.push({ icon: t === 'straight' ? 'walk' : t, text: `Leave ${first.ref.name}, ${into} into the corridor and walk about ${m(w)}.`, floor });
+          steps.push({ icon: t === 'straight' ? 'walk' : t, text: `Leave ${first.ref.name}, ${into} into the corridor and walk about ${m(w)}.`, floor, at: pts[0] });
           heading = dirOf(pts[1], pts[2]); i = 2;
         } else {
-          steps.push({ icon: 'walk', text: `Leave ${first.ref.name} into the corridor.`, floor });
+          steps.push({ icon: 'walk', text: `Leave ${first.ref.name} into the corridor.`, floor, at: pts[0] });
         }
       } else if (stopAt >= 1) {
         heading = dirOf(pts[0], pts[1]);
@@ -203,9 +203,9 @@ window.NavGraph = (function () {
         const lead = isFirst ? 'Head' : `Come out of the ${moves[li - 1].conn.kind === 'lift' ? 'lift' : 'stairs'} and head`;
         if (isFirst && !isLast && stopAt === 1) {
           const cn = moves[li].conn;
-          steps.push({ icon: 'walk', text: `Walk to ${cn.kind === 'lift' ? cn.name : 'the ' + cn.name} (about ${m(len(pts[0], pts[1]))}).`, floor });
+          steps.push({ icon: 'walk', text: `Walk to ${cn.kind === 'lift' ? cn.name : 'the ' + cn.name} (about ${m(len(pts[0], pts[1]))}).`, floor, at: pts[0] });
         } else {
-          steps.push({ icon: 'walk', text: `${lead} ${c} (${hint[c]}) for about ${m(len(pts[0], pts[1]))}.`, floor });
+          steps.push({ icon: 'walk', text: `${lead} ${c} (${hint[c]}) for about ${m(len(pts[0], pts[1]))}.`, floor, at: pts[0] });
         }
         i = 1;
       }
@@ -214,14 +214,14 @@ window.NavGraph = (function () {
         const h = dirOf(pts[i], pts[i + 1]), t = turn(heading, h);
         const w = len(pts[i], pts[i + 1]);
         const lead = t === 'back' ? 'Turn around' : t === 'straight' ? 'Carry on' : `Turn ${t}`;
-        steps.push({ icon: t === 'straight' ? 'walk' : t, text: `${lead} and walk about ${m(w)}.`, floor });
+        steps.push({ icon: t === 'straight' ? 'walk' : t, text: `${lead} and walk about ${m(w)}.`, floor, at: pts[i] });
         heading = h;
       }
 
       if (isLast && endRoom && !heading && pts.length >= 2) {
         const h = dirOf(pts[pts.length - 2], pts[pts.length - 1]), c = compass(h);
         const lead = isFirst ? 'Head' : `Come out of the ${moves[li - 1].conn.kind === 'lift' ? 'lift' : 'stairs'} and head`;
-        steps.push({ icon: 'walk', text: `${lead} ${c} (${hint[c]}) for about ${m(len(pts[pts.length - 2], pts[pts.length - 1]))}.`, floor });
+        steps.push({ icon: 'walk', text: `${lead} ${c} (${hint[c]}) for about ${m(len(pts[pts.length - 2], pts[pts.length - 1]))}.`, floor, at: pts[pts.length - 2] });
       }
       if (isLast && endRoom) {
         let side = 'ahead';
@@ -229,14 +229,14 @@ window.NavGraph = (function () {
           const t = turn(heading, dirOf(pts[pts.length - 2], pts[pts.length - 1]));
           side = t === 'left' ? 'on your left' : t === 'right' ? 'on your right' : t === 'back' ? 'behind you' : 'ahead';
         }
-        steps.push({ icon: 'end', text: `${last.ref.name} is ${side}.`, floor });
+        steps.push({ icon: 'end', text: `${last.ref.name} is ${side}.`, floor, at: pts[pts.length - 1] });
       } else if (isLast) {
-        steps.push({ icon: 'end', text: `You have arrived at ${last.ref ? last.ref.name : 'your destination'}.`, floor });
+        steps.push({ icon: 'end', text: `You have arrived at ${last.ref ? last.ref.name : 'your destination'}.`, floor, at: pts[pts.length - 1] });
       } else {
         const mv = moves[li];
         const up = fidx(mv.to) > fidx(mv.from) ? 'up' : 'down';
         const what = mv.conn.kind === 'lift' ? mv.conn.name : `the ${mv.conn.name}`;
-        steps.push({ icon: mv.conn.kind, text: `Take ${what} ${up} to ${floorName(mv.to)}.`, floor: mv.to });
+        steps.push({ icon: mv.conn.kind, text: `Take ${what} ${up} to ${floorName(mv.to)}.`, floor: mv.to, at: pts[pts.length - 1], vertical: true, toFloor: mv.to });
       }
     });
     return steps;
