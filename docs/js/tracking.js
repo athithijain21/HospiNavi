@@ -89,11 +89,68 @@
     if (T.on) update(true);
   }
 
+  // ---------- compass: which way is the person walking? ----------
+  // The map's "north" is not real north, so we learn the offset between the
+  // phone's compass and the map from the first few steps (people start by
+  // walking forward), then keep nudging it so steel/wiring drift is corrected.
+  const C = { heading: null, offset: null, samples: [], dir: 'forward' };
+  const wrap = (a) => ((a % 360) + 540) % 360 - 180;            // -180..180
+  const circMean = (arr) => { let x = 0, y = 0; arr.forEach((a) => { x += Math.cos(a * Math.PI / 180); y += Math.sin(a * Math.PI / 180); }); return Math.atan2(y, x) * 180 / Math.PI; };
+  function onOrient(e) {
+    let h = null;
+    if (typeof e.webkitCompassHeading === 'number') h = e.webkitCompassHeading;        // iPhone
+    else if (e.absolute && typeof e.alpha === 'number') h = (360 - e.alpha) % 360;     // Android
+    if (h === null || isNaN(h)) return;
+    // smooth it a little
+    C.heading = C.heading === null ? h : (C.heading + wrap(h - C.heading) * 0.25 + 360) % 360;
+  }
+  const bearingOf = (sg) => Math.atan2(sg.b.x - sg.a.x, sg.b.y - sg.a.y) * 180 / Math.PI;
+  function segsAround() {
+    // the route segment the dot is on now, plus the ones before and after it
+    const segs = route.segs.filter((sg) => sg.stage === T.stage);
+    if (!segs.length) return null;
+    let k = 0;
+    segs.forEach((x, i) => { if (T.d >= x.d0 - 1e-6) k = i; });
+    if (k > 0 && T.d <= segs[k].d0 + 1e-6) k = k; // exactly on a corner: count as the new segment
+    return { prev: segs[k - 1], cur: segs[k], next: segs[k + 1] };
+  }
+  function stepDirection() {
+    const S = segsAround();
+    if (C.heading === null || !S) return 1;                         // no compass: assume forward
+    const seg = bearingOf(S.cur);
+    if (C.offset === null) {                                        // still learning
+      C.samples.push(wrap(C.heading - seg));
+      if (C.samples.length >= 4) C.offset = circMean(C.samples);
+      return 1;
+    }
+    const walk = C.heading - C.offset;                              // walking direction in map terms
+    const rel = wrap(walk - seg);
+    if (Math.abs(rel) < 50) { C.offset += wrap(C.heading - seg - C.offset) * 0.05; return 1; }   // forward (and refine)
+    if (Math.abs(rel) > 130) return -1;                             // walking back
+    // sideways to this segment: people turn corners a little early or late
+    const toCornerAhead = S.cur.d0 + S.cur.len - T.d, fromCornerBehind = T.d - S.cur.d0;
+    if (S.next && toCornerAhead < 4 && Math.abs(wrap(walk - bearingOf(S.next))) < 60) return 1;
+    if (S.prev && fromCornerBehind < 4 && Math.abs(wrap(walk - bearingOf(S.prev) - 180)) < 60) return -1;
+    // very short stubs (a doorway) can't be judged by compass: keep going
+    if (S.cur.len < 3) return 1;
+    return 0;                                                       // turning on the spot
+  }
+
+  function stageStart() { return T.stage === 0 ? 0 : route.stops[T.stage - 1].d; }
+
   function addSteps(n) {
-    if (!T.on || !route || T.arrived) return;
-    if (T.holding) { T.steps += n; render(); return; } // climbing stairs / in the lift: don't move the dot
+    if (!T.on || !route) return;
+    if (T.arrived && stepDirection() !== -1) return;
+    if (T.arrived) T.arrived = false;
     T.steps += n;
-    T.d += n * stride;
+    const dir = stepDirection();
+    C.dir = dir === 1 ? 'forward' : dir === -1 ? 'back' : 'turning';
+    if (T.holding) {
+      // at a lift/stairs: only walking away (back) moves the dot again
+      if (dir === -1) { T.holding = null; T.d = Math.max(stageStart(), T.d - n * stride); update(false); } else render();
+      return;
+    }
+    T.d = Math.max(stageStart(), T.d + dir * n * stride);
     update(false);
   }
 
@@ -148,7 +205,8 @@
     }
     $('wkHead').textContent = head;
     $('wkText').textContent = main;
-    $('wkCount').textContent = `${T.steps} steps · ${Math.round(T.d)} of ${Math.round(route.total)} m`;
+    const compass = C.heading === null ? 'no compass' : C.offset === null ? 'learning direction…' : C.dir === 'back' ? 'walking back' : C.dir === 'turning' ? 'turning' : 'walking forward';
+    $('wkCount').textContent = `${T.steps} steps · ${Math.round(T.d)} of ${Math.round(route.total)} m · ${compass}`;
     const fb = $('wkFloor');
     fb.hidden = !T.holding;
     if (T.holding) fb.textContent = `I'm on ${T.holding.toFloor === 'G' ? 'the ground floor' : 'floor ' + T.holding.toFloor}`;
@@ -182,7 +240,13 @@
         if (r !== 'granted') { $('wkSensor').textContent = 'Motion access was denied. Allow it in Settings → Safari → Motion & Orientation.'; }
       }
     } catch (e) { /* older browsers */ }
+    try {
+      if (typeof DeviceOrientationEvent !== 'undefined' && typeof DeviceOrientationEvent.requestPermission === 'function') await DeviceOrientationEvent.requestPermission();
+    } catch (e) { /* older browsers */ }
     window.addEventListener('devicemotion', onMotion);
+    window.addEventListener('deviceorientationabsolute', onOrient);
+    window.addEventListener('deviceorientation', onOrient);
+    C.offset = null; C.samples = []; C.heading = null;
     try { T.wake = await navigator.wakeLock.request('screen'); } catch (e) { T.wake = null; }
     T.on = true;
     document.getElementById('panel').classList.add('walking');
@@ -200,6 +264,8 @@
   function stop() {
     T.on = false;
     window.removeEventListener('devicemotion', onMotion);
+    window.removeEventListener('deviceorientationabsolute', onOrient);
+    window.removeEventListener('deviceorientation', onOrient);
     try { T.wake && T.wake.release(); } catch (e) { /* ignore */ }
     document.getElementById('panel').classList.remove('walking');
     $('walk').hidden = true; $('walkBtn').hidden = !route;

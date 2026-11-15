@@ -20,9 +20,12 @@ a blue dot follows you along the route as you walk.
 2. Each footstep makes a small bounce. Every bounce bigger than the threshold = 1 step.
 3. Each step moves the dot forward along the route by the step length (default 0.70 m).
    The dot is locked to the route line, so it always stays in the corridor.
-4. At a lift or staircase the dot waits (steps on the stairs don't move it).
+4. The compass tells which way you're facing. After your first 4 steps it learns how the
+   building is turned, then: facing along the route = dot moves forward, facing back the
+   way you came = dot moves back, turning on the spot = dot stays put.
+5. At a lift or staircase the dot waits (steps on the stairs don't move it).
    Tap **"I'm on floor X"** when you arrive.
-5. If the dot drifts, tap the direction you're actually at in the list to snap it there,
+6. If the dot drifts, tap the direction you're actually at in the list to snap it there,
    or scan the nearest door's QR code.
 
 Tuning: if the dot runs ahead, make the step length shorter; if it lags, make it longer.
@@ -31,7 +34,7 @@ If steps are missed, choose **Light steps**; if it counts steps while standing, 
 Testing on a laptop: there's no motion sensor, so a **+1 step** button appears
 (or press Space / ↑).
 
-Needs HTTPS (GitHub Pages is fine). iPhones ask for "Motion & Orientation" permission when you tap Start walking.
+Needs HTTPS (GitHub Pages is fine). Hold the phone flat-ish in front of you (like Google Maps) so the compass reads correctly. iPhones ask for "Motion & Orientation" permission when you tap Start walking.
 
 ## Put it online
 
